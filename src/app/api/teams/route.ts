@@ -11,6 +11,7 @@ export async function GET(req: Request) {
         // 1. Check if user is in a team
         // @ts-ignore
         const user = await prisma.user.findUnique({
+            /* @ts-ignore */
             where: { id: session.user.id },
             include: {
                 team: {
