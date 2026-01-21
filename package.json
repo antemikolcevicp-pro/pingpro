@@ -14,19 +14,19 @@
     "@types/nodemailer": "^7.0.5",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.460.0",
-    "next": "15.1.0",
+    "next": "^16.1.4",
     "next-auth": "^4.24.10",
     "nodemailer": "^7.0.12",
     "prisma": "^6.2.1",
-    "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.1.0",
+    "eslint-config-next": "^16.1.4",
     "typescript": "^5"
   }
 }
