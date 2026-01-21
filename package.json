@@ -14,7 +14,7 @@
     "@types/nodemailer": "^7.0.5",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.460.0",
-    "next": "15.1.0",
+    "next": "15.1.11",
     "next-auth": "^4.24.10",
     "nodemailer": "^7.0.12",
     "prisma": "^6.2.1",
