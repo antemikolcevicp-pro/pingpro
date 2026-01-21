@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
         // Fetch latest role from DB if not in login flow
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, phoneNumber: true, sokazId: true, sokazTeam: true, sokazStats: true }
+          select: { role: true, phoneNumber: true, sokazId: true, sokazTeam: true, sokazStats: true, sokazLiga: true }
         });
         if (dbUser) {
           // @ts-ignore
@@ -48,6 +48,8 @@ export const authOptions: NextAuthOptions = {
           token.sokazTeam = dbUser.sokazTeam;
           // @ts-ignore
           token.sokazStats = dbUser.sokazStats;
+          // @ts-ignore
+          token.sokazLiga = dbUser.sokazLiga;
         }
       }
 
@@ -70,6 +72,8 @@ export const authOptions: NextAuthOptions = {
         session.user.sokazTeam = token.sokazTeam;
         // @ts-ignore
         session.user.sokazStats = token.sokazStats;
+        // @ts-ignore
+        session.user.sokazLiga = token.sokazLiga;
       }
       return session;
     },

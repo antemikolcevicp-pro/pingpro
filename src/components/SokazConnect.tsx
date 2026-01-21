@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { Search, Loader2, Link as LinkIcon, Check, ShieldCheck } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 export default function SokazConnect({ initialInfo }: { initialInfo?: any }) {
+    const { update } = useSession();
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -40,6 +42,8 @@ export default function SokazConnect({ initialInfo }: { initialInfo?: any }) {
                 const data = await res.json();
                 setLinkedInfo(data);
                 setResults([]);
+                // Trigger NextAuth to refresh the session token with new SOKAZ info
+                update();
             }
         } catch (error) {
             console.error(error);
