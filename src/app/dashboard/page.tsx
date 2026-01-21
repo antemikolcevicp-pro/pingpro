@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Calendar as CalendarIcon, Clock, Plus, Users, Loader2, Trophy, Activity } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Plus, Users, Loader2, Trophy, Activity, Phone } from "lucide-react";
 import SokazConnect from "@/components/SokazConnect";
 import SokazResults from "@/components/SokazResults";
 
@@ -91,6 +91,12 @@ export default function Dashboard() {
                         {session?.user?.role === 'COACH'
                             ? "Evo tvojih nadolazećih treninga s igračima."
                             : "Evo tvojih nadolazećih treninga."}
+                        {/* @ts-ignore */}
+                        {session?.user?.phoneNumber && (
+                            <span style={{ display: 'block', fontSize: '0.8rem', marginTop: '0.25rem', opacity: 0.7 }}>
+                                <Phone size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {session.user.phoneNumber}
+                            </span>
+                        )}
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: 'max-content' }} className="dashboard-actions">

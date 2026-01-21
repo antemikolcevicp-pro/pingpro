@@ -33,7 +33,7 @@ export default function Onboarding() {
             if (res.ok) {
                 // Update the session client side
                 await update({ phoneNumber });
-                router.push("/dashboard");
+                window.location.href = "/dashboard";
             } else {
                 alert("Neuspješno spremanje broja. Pokušajte ponovno.");
             }
@@ -65,7 +65,7 @@ export default function Onboarding() {
 
                 <h1 style={{ marginBottom: '1rem' }}>Još samo korak!</h1>
                 <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem' }}>
-                    Unesite svoj broj mobitela kako bismo vam mogli poslati WhatsApp podsjetnike za vaše termine.
+                    Uneseite svoj broj mobitela kako bismo vas mogli kontaktirati, a obavijesti o terminima ćete primati na e-mail.
                 </p>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
