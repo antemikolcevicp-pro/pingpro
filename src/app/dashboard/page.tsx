@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Calendar as CalendarIcon, Clock, MapPin, Plus, Users, Loader2 } from "lucide-react";
+import SokazConnect from "@/components/SokazConnect";
 
 export default function Dashboard() {
     const { data: session } = useSession();
@@ -86,14 +87,18 @@ export default function Dashboard() {
                     </div>
                 </section>
 
-                <section>
-                    <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Users size={24} color="var(--secondary)" /> Aktivnost Tima
-                    </h2>
-                    <div className="card glass">
-                        <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
-                            Nema novih aktivitnosti u tvom timu.
-                        </p>
+                <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <SokazConnect initialInfo={session?.user} />
+
+                    <div>
+                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Users size={24} color="var(--secondary)" /> Aktivnost Tima
+                        </h2>
+                        <div className="card glass">
+                            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+                                Nema novih aktivnosti u tvom timu.
+                            </p>
+                        </div>
                     </div>
                 </section>
             </div>

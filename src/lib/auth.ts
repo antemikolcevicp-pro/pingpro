@@ -25,6 +25,12 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         // @ts-ignore
         token.phoneNumber = user.phoneNumber;
+        // @ts-ignore
+        token.sokazId = user.sokazId;
+        // @ts-ignore
+        token.sokazTeam = user.sokazTeam;
+        // @ts-ignore
+        token.sokazStats = user.sokazStats;
       } else if (token.id) {
         // Fetch latest role from DB if not in login flow
         const dbUser = await prisma.user.findUnique({
@@ -34,6 +40,9 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.role = dbUser.role;
           token.phoneNumber = dbUser.phoneNumber;
+          token.sokazId = dbUser.sokazId;
+          token.sokazTeam = dbUser.sokazTeam;
+          token.sokazStats = dbUser.sokazStats;
         }
       }
 
@@ -50,6 +59,12 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id;
         // @ts-ignore
         session.user.phoneNumber = token.phoneNumber;
+        // @ts-ignore
+        session.user.sokazId = token.sokazId;
+        // @ts-ignore
+        session.user.sokazTeam = token.sokazTeam;
+        // @ts-ignore
+        session.user.sokazStats = token.sokazStats;
       }
       return session;
     },
