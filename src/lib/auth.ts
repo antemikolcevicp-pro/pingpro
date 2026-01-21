@@ -35,13 +35,18 @@ export const authOptions: NextAuthOptions = {
         // Fetch latest role from DB if not in login flow
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, phoneNumber: true }
+          select: { role: true, phoneNumber: true, sokazId: true, sokazTeam: true, sokazStats: true }
         });
         if (dbUser) {
+          // @ts-ignore
           token.role = dbUser.role;
+          // @ts-ignore
           token.phoneNumber = dbUser.phoneNumber;
+          // @ts-ignore
           token.sokazId = dbUser.sokazId;
+          // @ts-ignore
           token.sokazTeam = dbUser.sokazTeam;
+          // @ts-ignore
           token.sokazStats = dbUser.sokazStats;
         }
       }

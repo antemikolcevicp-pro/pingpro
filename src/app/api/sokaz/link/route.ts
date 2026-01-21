@@ -30,6 +30,7 @@ export async function POST(req: Request) {
         // Update User in our database
         const updatedUser = await prisma.user.update({
             where: { id: userId },
+            // @ts-ignore
             data: {
                 sokazId: sokazId.toString(),
                 sokazTeam: teamName,
