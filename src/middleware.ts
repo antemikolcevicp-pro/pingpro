@@ -3,6 +3,16 @@ import { NextResponse } from "next/server";
 
 export default withAuth(
     function middleware(req) {
+        // 1. Geo-Blocking (Restrict to Croatia only)
+        // Vercel adds this header automatically. 'HR' is the code for Croatia.
+        // We skip this check in development (when running locally)
+        const country = req.geo?.country || req.headers.get('x-vercel-ip-country');
+
+        if (process.env.NODE_ENV === 'production' && country && country !== 'HR') {
+            // Return 403 Forbidden for non-HR traffic
+            return new NextResponse("Pristup dozvoljen samo iz Hrvatske.", { status: 403 });
+        }
+
         const token = req.nextauth.token;
         const isAuth = !!token;
         const isPathOnboarding = req.nextUrl.pathname.startsWith("/onboarding");
