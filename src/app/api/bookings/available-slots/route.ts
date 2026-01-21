@@ -28,6 +28,9 @@ export async function GET(req: Request) {
         const END_TIME = "23:59";
         const STEP_MINUTES = 30;
 
+        const isSokaz = searchParams.get("sokaz") === 'true';
+        const sokazStartHour = 18;
+
         const blockStart = parse(START_TIME, "HH:mm", date);
         const blockEnd = parse(END_TIME, "HH:mm", date);
 
@@ -40,11 +43,35 @@ export async function GET(req: Request) {
 
         if (!defaultCoach) return NextResponse.json([]);
 
-        while (isBefore(addMinutes(current, duration), blockEnd) ||
-            format(addMinutes(current, duration), "HH:mm") === format(blockEnd, "HH:mm")) {
+        while (current < blockEnd) {
+            // SOKAZ Rule: Only check slots after 18:00
+            if (isSokaz) {
+                if (current.getHours() < sokazStartHour) {
+                    current = addMinutes(current, STEP_MINUTES);
+                    continue;
+                }
+            }
+
+            // Calculate duration: if SOKAZ, duration is until end of day (blockEnd)
+            // Otherwise use requested duration
+            let currentDuration = duration;
+            if (isSokaz) {
+                // Difference in minutes between blockEnd and current
+                currentDuration = (blockEnd.getTime() - current.getTime()) / 60000;
+                if (currentDuration <= 0) break;
+            }
 
             const slotStart = new Date(current);
-            const slotEnd = addMinutes(slotStart, duration);
+            const slotEnd = addMinutes(slotStart, currentDuration);
+
+            // Bounds check
+            if (isBefore(blockEnd, slotEnd)) {
+                if (!isSokaz) { // For regular, if it doesn't fit, break or skip
+                    current = addMinutes(current, STEP_MINUTES);
+                    continue;
+                }
+                // For SOKAZ, slotEnd IS blockEnd, so it fits by definition
+            }
 
             const isOverlapping = existingActivities.some(activity => {
                 return areIntervalsOverlapping(
@@ -56,14 +83,13 @@ export async function GET(req: Request) {
             if (!isOverlapping) {
                 availableSlots.push({
                     time: format(slotStart, "HH:mm"),
-                    duration: duration,
+                    duration: currentDuration,
                     coachName: defaultCoach.name,
                     coachId: defaultCoach.id,
                 });
             }
 
             current = addMinutes(current, STEP_MINUTES);
-            if (current > blockEnd) break;
         }
 
         availableSlots.sort((a, b) => a.time.localeCompare(b.time));

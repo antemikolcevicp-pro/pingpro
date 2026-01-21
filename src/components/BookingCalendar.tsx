@@ -13,18 +13,20 @@ export default function BookingCalendar() {
     const [selectedSlot, setSelectedSlot] = useState<any | null>(null);
     const [loading, setLoading] = useState(false);
     const [bookingInProgress, setBookingInProgress] = useState(false);
+    const [bookingType, setBookingType] = useState<'REGULAR' | 'SOKAZ'>('REGULAR');
     const router = useRouter();
 
     const days = Array.from({ length: 30 }, (_, i) => addDays(new Date(), i));
 
     useEffect(() => {
-        fetchSlots(selectedDate, duration);
-    }, [selectedDate, duration]);
+        fetchSlots(selectedDate, duration, bookingType);
+    }, [selectedDate, duration, bookingType]);
 
-    const fetchSlots = async (date: Date, dur: number) => {
+    const fetchSlots = async (date: Date, dur: number, type: 'REGULAR' | 'SOKAZ') => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/bookings/available-slots?date=${date.toISOString()}&duration=${dur}`);
+            const isSokaz = type === 'SOKAZ';
+            const res = await fetch(`/api/bookings/available-slots?date=${date.toISOString()}&duration=${dur}&sokaz=${isSokaz}`);
             if (res.ok) {
                 const data = await res.json();
                 setAvailableSlots(data);
@@ -51,7 +53,8 @@ export default function BookingCalendar() {
                 body: JSON.stringify({
                     startTime: startTime.toISOString(),
                     coachId: selectedSlot.coachId,
-                    duration: duration
+                    duration: selectedSlot.duration || duration,
+                    notes: bookingType === 'SOKAZ' ? "SOKAZ Liga (Blokiran termin)" : undefined
                 }),
             });
 
@@ -59,7 +62,7 @@ export default function BookingCalendar() {
                 router.push("/dashboard?success=true");
             } else {
                 alert("Rezervacija nije uspjela. Termin je možda upravo zauzet.");
-                fetchSlots(selectedDate, duration);
+                fetchSlots(selectedDate, duration, bookingType);
             }
         } catch (error) {
             alert("Došlo je do greške.");
@@ -70,27 +73,59 @@ export default function BookingCalendar() {
 
     return (
         <div className="booking-container">
-            {/* DURATION SELECTION */}
-            <div className="section-header">
+            {/* DATE SELECTION */}
+            <div className="section-header" style={{ marginBottom: '1.5rem' }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <Clock size={20} color="var(--primary)" />
-                    Trajanje Treninga
+                    Vrsta Treninga
                 </h3>
             </div>
-            <div className="duration-toggle">
-                {[60, 90, 120].map((d) => (
-                    <button
-                        key={d}
-                        className={`dur-btn ${duration === d ? 'active' : ''}`}
-                        onClick={() => {
-                            setDuration(d);
-                            setSelectedSlot(null);
-                        }}
-                    >
-                        {d} min <span className="small">({d / 60}h)</span>
-                    </button>
-                ))}
+
+            <div className="type-toggle glass" style={{ display: 'flex', padding: '0.4rem', borderRadius: '16px', marginBottom: '2rem', gap: '0.5rem' }}>
+                <button
+                    className={`type-btn ${bookingType === 'REGULAR' ? 'active' : ''}`}
+                    onClick={() => { setBookingType('REGULAR'); setSelectedSlot(null); }}
+                >
+                    <Clock size={16} /> Običan Trening
+                </button>
+                <button
+                    className={`type-btn ${bookingType === 'SOKAZ' ? 'active' : ''}`}
+                    onClick={() => { setBookingType('SOKAZ'); setSelectedSlot(null); }}
+                >
+                    <Shield size={16} /> SOKAZ Liga
+                </button>
             </div>
+
+            {bookingType === 'REGULAR' && (
+                <>
+                    <div className="section-header">
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <Clock size={20} color="var(--primary)" />
+                            Trajanje Treninga
+                        </h3>
+                    </div>
+                    <div className="duration-toggle">
+                        {[60, 90, 120].map((d) => (
+                            <button
+                                key={d}
+                                className={`dur-btn ${duration === d ? 'active' : ''}`}
+                                onClick={() => {
+                                    setDuration(d);
+                                    setSelectedSlot(null);
+                                }}
+                            >
+                                {d} min <span className="small">({d / 60}h)</span>
+                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {bookingType === 'SOKAZ' && (
+                <div className="info-box glass" style={{ padding: '1rem', borderRadius: '12px', marginBottom: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <p>ℹ️ SOKAZ termini dostupni su samo <strong>nakon 18:00h</strong>.</p>
+                    <p>Odabirom termina dvorana se automatski rezervira do kraja dana.</p>
+                </div>
+            )}
 
             {/* DATE SELECTION */}
             <div className="section-header" style={{ marginTop: '2.5rem' }}>
@@ -151,7 +186,10 @@ export default function BookingCalendar() {
                                 >
                                     <div className="time-info">
                                         <span className="time">{slot.time}</span>
-                                        <span className="end-time">do {format(addMinutes(parseISO(`${format(selectedDate, "yyyy-MM-dd")}T${slot.time}:00`), duration), "HH:mm")}</span>
+                                        <span className="end-time">
+                                            do {format(addMinutes(parseISO(`${format(selectedDate, "yyyy-MM-dd")}T${slot.time}:00`), slot.duration), "HH:mm")}
+                                            {bookingType === 'SOKAZ' && " (Kraj dana)"}
+                                        </span>
                                     </div>
                                     <div className="coach-info">
                                         <span className="badge">PRO</span>
@@ -182,7 +220,7 @@ export default function BookingCalendar() {
                                 <span>{format(selectedDate, "d. MMMM", { locale: hr })}</span> u
                                 <span className="highlight"> {selectedSlot.time}h</span>
                             </p>
-                            <p className="sub-info">Trajanje: <strong>{duration} min</strong> | Trener: <strong>{selectedSlot.coachName}</strong></p>
+                            <p className="sub-info">Trajanje: <strong>{selectedSlot.duration} min</strong> {bookingType === 'SOKAZ' && "(SOKAZ)"} | Trener: <strong>{selectedSlot.coachName}</strong></p>
                         </div>
                         <button
                             className="btn btn-primary btn-confirm"
@@ -275,6 +313,13 @@ export default function BookingCalendar() {
                     .summary-content { flex-direction: column; text-align: center; gap: 1rem; }
                     .btn-confirm { width: 100%; }
                 }
+
+                .type-btn {
+                    flex: 1; padding: 0.8rem; border-radius: 12px; color: var(--text-muted);
+                    font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;
+                    transition: all 0.3s;
+                }
+                .type-btn.active { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
             `}</style>
         </div>
     );

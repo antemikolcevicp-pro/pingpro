@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { startTime, coachId, duration } = await req.json();
+        const { startTime, coachId, duration, notes } = await req.json();
         const slotDuration = duration || 90;
 
         // @ts-ignore
@@ -46,6 +46,7 @@ export async function POST(req: Request) {
                 startDateTime: startObj,
                 endDateTime: endObj,
                 status: initialStatus,
+                notes
             },
             include: { coach: true, user: true }
         });
