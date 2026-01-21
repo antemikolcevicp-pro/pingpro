@@ -94,7 +94,8 @@ export default function Dashboard() {
                         {/* @ts-ignore */}
                         {session?.user?.phoneNumber && (
                             <span style={{ display: 'block', fontSize: '0.8rem', marginTop: '0.25rem', opacity: 0.7 }}>
-                                <Phone size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {session.user.phoneNumber}
+                                {/* @ts-ignore */}
+                                <Phone size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {(session.user as any).phoneNumber}
                             </span>
                         )}
                     </p>
