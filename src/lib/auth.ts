@@ -31,6 +31,8 @@ export const authOptions: NextAuthOptions = {
         token.sokazTeam = user.sokazTeam;
         // @ts-ignore
         token.sokazStats = user.sokazStats;
+        // @ts-ignore
+        token.sokazLiga = user.sokazLiga;
       } else if (token.id) {
         // Fetch latest role from DB if not in login flow
         const dbUser = await prisma.user.findUnique({

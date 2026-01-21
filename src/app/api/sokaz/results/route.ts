@@ -36,45 +36,42 @@ export async function GET(req: Request) {
         const html = await response.text();
 
         // 3. Parse HTML to extract matches
-        // Remove newlines and extra spaces to make regex reliable
-        const cleanHtml = html.replace(/\s+/g, ' ');
-
         const rounds: any[] = [];
+        const rows = html.split(/<tr[^>]*>/i);
+        let currentRoundName = "Nepoznato kolo";
 
-        // Find all round blocks. Rounds are separated by <b>N. KOLO</b>
-        // Then we look for matches within that context.
-        // A better way: match all <b>\d+. KOLO</b> or all <tr> with zapisnik.php
+        rows.forEach(row => {
+            // Check for round header
+            const roundMatch = row.match(/<b>(\d+\.?[\s\u00A0]*KOLO)<\/b>/i);
+            if (roundMatch) {
+                currentRoundName = roundMatch[1].replace(/<[^>]*>/g, '').trim();
+            }
 
-        const roundSplit = cleanHtml.split(/<b>(\d+\.\s*KOLO)<\/b>/i);
-        // roundSplit[0] is garbage before 1st round
-        // roundSplit[1] is "1. KOLO", roundSplit[2] is content...
+            // A match row always contains 'zapisnik.php'
+            if (row.toLowerCase().includes('zapisnik.php')) {
+                const cells = row.split(/<\/td>/i).map(c => c.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim());
 
-        for (let i = 1; i < roundSplit.length; i += 2) {
-            const roundName = roundSplit[i];
-            const roundContent = roundSplit[i + 1];
+                if (cells.length >= 5) {
+                    const home = cells[1];
+                    const away = cells[3];
+                    const score = cells[4];
 
-            // Match all matches in this round: <tr>...<td>Home</td><td>–</td><td>Away</td><td>Score</td>...zapisnik.php...</tr>
-            // The structure is roughly: <td>Home</td><td>–</td><td>Away</td><td>Score</td>
-            const matchRegex = /<td[^>]*>.*?<\/td>\s*<td[^>]*>(.*?)<\/td>\s*<td[^>]*>–<\/td>\s*<td[^>]*>(.*?)<\/td>\s*<td[^>]*>(.*?)<\/td>.*?<a href="(zapisnik\.php\?[^"]+)"/gi;
+                    const linkMatch = row.match(/href="(zapisnik\.php\?[^"]+)"/i);
+                    const link = linkMatch ? linkMatch[1] : "";
 
-            let m;
-            while ((m = matchRegex.exec(roundContent)) !== null) {
-                const home = m[1].replace(/<[^>]*>/g, '').trim();
-                const away = m[2].replace(/<[^>]*>/g, '').trim();
-                const score = m[3].replace(/<[^>]*>/g, '').trim();
-                const link = m[4];
-
-                if (home.includes(userTeam) || away.includes(userTeam)) {
-                    rounds.push({
-                        round: roundName,
-                        home,
-                        away,
-                        score: (score === ":" || !score) ? "Nije odigrano" : score,
-                        reportUrl: `https://www.sokaz.hr/${link}`
-                    });
+                    const teamLower = userTeam.toLowerCase();
+                    if (home.toLowerCase().includes(teamLower) || away.toLowerCase().includes(teamLower)) {
+                        rounds.push({
+                            round: currentRoundName,
+                            home,
+                            away,
+                            score: (score === ":" || !score) ? "Nije odigrano" : score,
+                            reportUrl: `https://www.sokaz.hr/${link}`
+                        });
+                    }
                 }
             }
-        }
+        });
 
         console.log(`[SOKAZ API] Found ${rounds.length} matches for team ${userTeam}`);
         return NextResponse.json(rounds);

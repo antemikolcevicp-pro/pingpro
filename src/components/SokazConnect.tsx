@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Loader2, Link as LinkIcon, Check, ShieldCheck } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -11,6 +11,13 @@ export default function SokazConnect({ initialInfo }: { initialInfo?: any }) {
     const [loading, setLoading] = useState(false);
     const [linking, setLinking] = useState(false);
     const [linkedInfo, setLinkedInfo] = useState<any>(initialInfo);
+
+    // Update local state when session updates
+    useEffect(() => {
+        if (initialInfo?.sokazId) {
+            setLinkedInfo(initialInfo);
+        }
+    }, [initialInfo]);
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
