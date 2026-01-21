@@ -106,7 +106,7 @@ export default function Dashboard() {
                 </div>
             </header>
 
-            <div className="grid-responsive" style={{ gridTemplateColumns: 'minmax(0, 1fr) 400px' }}>
+            <div className="grid-responsive">
                 <section>
                     <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <CalendarIcon size={24} color="var(--primary)" /> Moji Treningi
