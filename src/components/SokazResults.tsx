@@ -38,7 +38,14 @@ export default function SokazResults() {
     );
 
     return (
-        <div className="sokaz-results-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="sokaz-results-list" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            maxHeight: '450px',
+            overflowY: 'auto',
+            paddingRight: '0.5rem'
+        }}>
             {results.map((match, idx) => (
                 <div key={idx} className="match-card card glass" style={{ padding: '1.25rem' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', marginBottom: '0.5rem', opacity: 0.8 }}>
@@ -82,6 +89,9 @@ export default function SokazResults() {
                 .animate-spin { animation: spin 1s linear infinite; }
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 .flex-center { display: flex; align-items: center; justify-content: center; }
+                .sokaz-results-list::-webkit-scrollbar { width: 4px; }
+                .sokaz-results-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+                .sokaz-results-list::-webkit-scrollbar-thumb { background: rgba(57, 255, 20, 0.2); border-radius: 10px; }
             `}</style>
         </div>
     );
