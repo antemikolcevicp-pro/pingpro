@@ -105,7 +105,7 @@ export default function TeamsPage() {
                                             {member.image ? <img src={member.image} alt="" style={{ width: '100%' }} /> : <Users size={16} style={{ margin: 'auto' }} />}
                                         </div>
                                         <span>{member.name}</span>
-                                        {member.id === team.coachId && <Shield size={14} color="var(--primary)" title="Coach" />}
+                                        {member.id === team.coachId && <Shield size={14} color="var(--primary)" />}
                                     </div>
                                 ))}
                             </div>
