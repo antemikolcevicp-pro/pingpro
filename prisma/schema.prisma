@@ -60,6 +60,7 @@ model User {
   sokazId            String?
   sokazTeam          String?
   sokazStats         String?
+  sokazLiga          String?
   createdAt          DateTime  @default(now())
 }
 

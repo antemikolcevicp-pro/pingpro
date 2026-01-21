@@ -34,7 +34,8 @@ export async function POST(req: Request) {
             data: {
                 sokazId: sokazId.toString(),
                 sokazTeam: teamName,
-                sokazStats: stats ? `${stats} (${liga || ''})` : null
+                sokazStats: stats ? `${stats} (${liga || ''})` : null,
+                sokazLiga: liga
             }
         });
 

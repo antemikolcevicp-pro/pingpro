@@ -3,8 +3,71 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Calendar as CalendarIcon, Clock, MapPin, Plus, Users, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Plus, Users, Loader2, Trophy } from "lucide-react";
 import SokazConnect from "@/components/SokazConnect";
+import SokazResults from "@/components/SokazResults";
+
+const DashboardRightSection = ({ session }: { session: any }) => {
+    const [activeTab, setActiveTab] = useState<'activity' | 'sokaz'>('activity');
+    const isSokazLinked = session?.user?.sokazId;
+
+    return (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <SokazConnect initialInfo={session?.user} />
+
+            <div>
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+                    <button
+                        onClick={() => setActiveTab('activity')}
+                        style={{
+                            padding: '0.5rem 0',
+                            background: 'none',
+                            border: 'none',
+                            color: activeTab === 'activity' ? 'var(--primary)' : 'var(--text-muted)',
+                            borderBottom: activeTab === 'activity' ? '2px solid var(--primary)' : '2px solid transparent',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}
+                    >
+                        <Users size={18} /> Aktivnost Tima
+                    </button>
+                    {isSokazLinked && (
+                        <button
+                            onClick={() => setActiveTab('sokaz')}
+                            style={{
+                                padding: '0.5rem 0',
+                                background: 'none',
+                                border: 'none',
+                                color: activeTab === 'sokaz' ? 'var(--secondary)' : 'var(--text-muted)',
+                                borderBottom: activeTab === 'sokaz' ? '2px solid var(--secondary)' : '2px solid transparent',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            <Trophy size={18} /> SOKAZ Rezultati
+                        </button>
+                    )}
+                </div>
+
+                {activeTab === 'activity' ? (
+                    <div className="card glass">
+                        <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+                            Nema novih aktivnosti u tvom timu.
+                        </p>
+                    </div>
+                ) : (
+                    <SokazResults />
+                )}
+            </div>
+        </section>
+    );
+};
 
 export default function Dashboard() {
     const { data: session } = useSession();
@@ -87,20 +150,7 @@ export default function Dashboard() {
                     </div>
                 </section>
 
-                <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <SokazConnect initialInfo={session?.user} />
-
-                    <div>
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Users size={24} color="var(--secondary)" /> Aktivnost Tima
-                        </h2>
-                        <div className="card glass">
-                            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
-                                Nema novih aktivnosti u tvom timu.
-                            </p>
-                        </div>
-                    </div>
-                </section>
+                <DashboardRightSection session={session} />
             </div>
         </div>
     );
