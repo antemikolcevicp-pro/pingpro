@@ -1,0 +1,15 @@
+name: Hourly Reminder Trigger
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Vercel Cron Endpoint
+        run: |
+          curl -X GET ${{ secrets.VERCEL_APP_URL }}/api/cron/reminders \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
