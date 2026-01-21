@@ -20,7 +20,7 @@ export async function GET() {
                     select: { members: true }
                 },
                 coach: {
-                    select: { name: true, email: true }
+                    select: { name: true, email: true, role: true }
                 }
             },
             orderBy: { name: 'asc' }

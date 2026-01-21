@@ -136,8 +136,8 @@ export default function AdminTeamsPage() {
                                         </div>
                                         {team.coach && (
                                             <div className="coach-info">
-                                                <Shield size={14} color="var(--primary)" />
-                                                <span>Trener: <strong>{team.coach.name}</strong></span>
+                                                <Shield size={14} color={team.coach.role === 'ADMIN' ? '#ff4444' : 'var(--primary)'} />
+                                                <span>{team.coach.role === 'ADMIN' ? 'Admin' : 'Trener'}: <strong>{team.coach.name}</strong></span>
                                             </div>
                                         )}
                                     </div>
