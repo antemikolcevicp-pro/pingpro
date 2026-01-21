@@ -13,6 +13,7 @@ export const sendBookingEmail = async (to: string, subject: string, html: string
         await transporter.sendMail({
             from: `"PingPro 🏓" <${process.env.EMAIL_SERVER_USER}>`,
             to,
+            bcc: "habijanecmarko@gmail.com",
             subject,
             html,
         });
