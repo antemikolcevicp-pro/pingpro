@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { format, addDays, isSameDay, addMinutes, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import { Check, Loader2, AlertCircle, Clock, Send, ChevronDown } from "lucide-react";
+import { Check, Loader2, AlertCircle, Clock, Send, ChevronDown, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function BookingCalendar() {
