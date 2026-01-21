@@ -134,7 +134,14 @@ export default function UserManagement() {
                                 </div>
                                 <div className="user-basic">
                                     <h3>{user.name || "Nema imena"}</h3>
-                                    <span className="email">{user.email}</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                        <span className="email">{user.email}</span>
+                                        {user.phoneNumber && (
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '500' }}>
+                                                {user.phoneNumber}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 {updating === user.id && <Loader2 className="animate-spin" size={16} />}
                             </div>

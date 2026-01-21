@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         // Try to find a matching team in our system and join it automatically
         if (teamName) {
             const matchingTeam = await prisma.team.findFirst({
-                where: { name: { contains: teamName, mode: 'insensitive' } }
+                where: { name: { equals: teamName, mode: 'insensitive' } }
             });
 
             if (matchingTeam) {

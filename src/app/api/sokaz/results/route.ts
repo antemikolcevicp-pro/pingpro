@@ -60,7 +60,7 @@ export async function GET(req: Request) {
                     const link = linkMatch ? linkMatch[1] : "";
 
                     const teamLower = userTeam.toLowerCase();
-                    if (home.toLowerCase().includes(teamLower) || away.toLowerCase().includes(teamLower)) {
+                    if (home.toLowerCase() === teamLower || away.toLowerCase() === teamLower) {
                         rounds.push({
                             round: currentRoundName,
                             home,
