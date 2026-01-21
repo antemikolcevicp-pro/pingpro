@@ -161,8 +161,15 @@ h3 {
 
 .grid-responsive {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: 1fr;
   gap: 2rem;
+  width: 100%;
+}
+
+@media (min-width: 992px) {
+  .grid-responsive {
+    grid-template-columns: minmax(0, 1fr) 400px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -173,15 +180,17 @@ h3 {
   }
 
   .container {
-    padding: 0 1.25rem;
+    padding: 0 1rem;
+    overflow-wrap: break-word;
   }
 
   h1 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
   }
 
   h2 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 
   .desktop-only {
