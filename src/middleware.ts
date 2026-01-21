@@ -6,7 +6,7 @@ export default withAuth(
         // 1. Geo-Blocking (Restrict to Croatia only)
         // Vercel adds this header automatically. 'HR' is the code for Croatia.
         // We skip this check in development (when running locally)
-        const country = req.geo?.country || req.headers.get('x-vercel-ip-country');
+        const country = (req as any).geo?.country || req.headers.get('x-vercel-ip-country');
 
         if (process.env.NODE_ENV === 'production' && country && country !== 'HR') {
             // Return 403 Forbidden for non-HR traffic
