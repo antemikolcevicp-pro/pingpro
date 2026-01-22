@@ -1,10 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native"]
-  engineType = "library"
+  engineType    = "library"
 }
 
 datasource db {
@@ -12,7 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// NextAuth Models
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -26,8 +22,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -41,27 +36,27 @@ model Session {
 }
 
 model User {
-  id                 String    @id @default(cuid())
-  name               String?
-  email              String?   @unique
-  emailVerified      DateTime?
-  image              String?
-  role               Role      @default(PLAYER)
-  phoneNumber        String?
-  teamId             String?
-  accounts           Account[]
-  sessions           Session[]
-  team               Team?     @relation("TeamMembers", fields: [teamId], references: [id])
-  bookings           Booking[] @relation("PlayerBookings")
-  coachedBookings    Booking[] @relation("CoachBookings")
-  availabilitySlots  AvailabilitySlot[]
-  managedTeams       Team[]    @relation("TeamCoach")
-  bookingBlocks      BookingBlock[]
-  sokazId            String?
-  sokazTeam          String?
-  sokazStats         String?
-  sokazLiga          String?
-  createdAt          DateTime  @default(now())
+  id                String             @id @default(cuid())
+  name              String?
+  email             String?            @unique
+  emailVerified     DateTime?
+  image             String?
+  role              Role               @default(PLAYER)
+  phoneNumber       String?
+  teamId            String?
+  createdAt         DateTime           @default(now())
+  sokazId           String?
+  sokazStats        String?
+  sokazTeam         String?
+  sokazLiga         String?
+  accounts          Account[]
+  availabilitySlots AvailabilitySlot[]
+  coachedBookings   Booking[]          @relation("CoachBookings")
+  bookings          Booking[]          @relation("PlayerBookings")
+  bookingBlocks     BookingBlock[]
+  sessions          Session[]
+  managedTeams      Team[]             @relation("TeamCoach")
+  team              Team?              @relation("TeamMembers", fields: [teamId], references: [id])
 }
 
 model VerificationToken {
@@ -72,66 +67,75 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Application Models
-enum Role {
-  PLAYER
-  COACH
-  ADMIN
-}
-
 model Team {
-  id          String   @id @default(cuid())
-  name        String
-  coachId     String
-  inviteCode  String   @unique @default(cuid())
-  coach       User     @relation("TeamCoach", fields: [coachId], references: [id])
-  members     User[]   @relation("TeamMembers")
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  coachId    String
+  inviteCode String   @unique @default(cuid())
+  createdAt  DateTime @default(now())
+  coach      User     @relation("TeamCoach", fields: [coachId], references: [id])
+  members    User[]   @relation("TeamMembers")
 }
 
 model Location {
-  id                String   @id @default(cuid())
-  name              String   // npr. "Bakarić", "Velesajam"
+  id                String             @id @default(cuid())
+  name              String
   address           String?
-  totalTables       Int      @default(1)
-  isActive          Boolean  @default(true)
-  bookings          Booking[]
+  totalTables       Int                @default(1)
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
   availabilitySlots AvailabilitySlot[]
+  bookings          Booking[]
   bookingBlocks     BookingBlock[]
-  createdAt         DateTime @default(now())
 }
 
 model AvailabilitySlot {
-  id                  String   @id @default(cuid())
+  id                  String    @id @default(cuid())
   coachId             String?
+  dayOfWeek           Int
+  startTime           String
+  endTime             String
+  slotDurationMinutes Int       @default(60)
+  isActive            Boolean   @default(true)
   locationId          String?
-  dayOfWeek           Int      // 0-6 (0=Nedjelja, 1=Ponedjeljak)
-  startTime           String   // "17:00"
-  endTime             String   // "21:00"
-  slotDurationMinutes Int      @default(60)
-  isActive            Boolean  @default(true)
   coach               User?     @relation(fields: [coachId], references: [id])
   location            Location? @relation(fields: [locationId], references: [id])
 }
 
 model Booking {
-  id                String   @id @default(cuid())
-  userId            String
-  coachId           String?
-  locationId        String?
-  startDateTime     DateTime
-  endDateTime       DateTime
-  status            BookingStatus @default(CONFIRMED)
-  price             Float?   @default(0)
-  notes             String?
-  participantCount  Int?     @default(1)
-  tableCount        Int?     @default(1)
-  reminderSent      Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  
-  user              User      @relation("PlayerBookings", fields: [userId], references: [id])
-  coach             User?     @relation("CoachBookings", fields: [coachId], references: [id])
-  location          Location? @relation(fields: [locationId], references: [id])
+  id               String        @id @default(cuid())
+  userId           String
+  coachId          String?
+  startDateTime    DateTime
+  endDateTime      DateTime
+  status           BookingStatus @default(CONFIRMED)
+  price            Float?        @default(0)
+  notes            String?
+  reminderSent     Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  locationId       String?
+  participantCount Int?          @default(1)
+  tableCount       Int?          @default(1)
+  coach            User?         @relation("CoachBookings", fields: [coachId], references: [id])
+  location         Location?     @relation(fields: [locationId], references: [id])
+  user             User          @relation("PlayerBookings", fields: [userId], references: [id])
+}
+
+model BookingBlock {
+  id            String    @id @default(cuid())
+  coachId       String?
+  startDateTime DateTime
+  endDateTime   DateTime
+  reason        String?
+  locationId    String?
+  coach         User?     @relation(fields: [coachId], references: [id])
+  location      Location? @relation(fields: [locationId], references: [id])
+}
+
+enum Role {
+  PLAYER
+  COACH
+  ADMIN
 }
 
 enum BookingStatus {
@@ -140,16 +144,5 @@ enum BookingStatus {
   PENDING
   BLOCKED
   COMPLETED
-  HALL_ONLY // Dodano za lakše filtriranje, iako možemo koristiti i coachId == null
-}
-
-model BookingBlock {
-  id            String   @id @default(cuid())
-  coachId       String?
-  locationId    String?
-  startDateTime DateTime
-  endDateTime   DateTime
-  reason        String?
-  coach         User?     @relation(fields: [coachId], references: [id])
-  location      Location? @relation(fields: [locationId], references: [id])
+  HALL_ONLY
 }

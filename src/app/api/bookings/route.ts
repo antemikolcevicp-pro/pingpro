@@ -46,29 +46,36 @@ export async function POST(req: Request) {
             status: { not: 'CANCELLED' },
             startDateTime: { lt: endObj },
             endDateTime: { gt: startObj },
-            locationId: locationId || "bakarić"
         };
 
-        if (!isSokaz) {
-            // For regular coach sessions, we specifically check that coach
-            // BUT we also must check if the hall is blocked by SOKAZ or Admin
+        if (isSokaz) {
+            // SOKAZ blocks the entire location
+            overlapQuery.locationId = locationId || "bakarić";
+        } else {
+            // For Coach sessions, we check:
+            // 1. Is the coach busy ANYWHERE at this time?
+            // 2. Is this specific location BLOCKED or occupied by SOKAZ?
             overlapQuery.OR = [
                 { coachId: coachId },
-                { status: 'BLOCKED' },
-                { notes: { startsWith: 'SOKAZ' } }
+                {
+                    locationId: locationId || "bakarić",
+                    OR: [
+                        { status: 'BLOCKED' },
+                        { notes: { startsWith: 'SOKAZ' } }
+                    ]
+                }
             ];
-            // Since we use OR, the top-level conditions (location, status, time) 
-            // will be applied to each branch of the OR.
         }
-        // If isSokaz is true, overlapQuery remains generic for the location,
-        // meaning ANY booking in that location (Coach or SOKAZ) will cause a conflict.
 
-        const overlapping = await prisma.booking.findMany({
-            where: overlapQuery
+        const overlapping = await prisma.booking.findFirst({
+            where: overlapQuery,
+            include: { user: true, coach: true }
         });
 
-        if (overlapping.length > 0) {
-            return new NextResponse("Termin se preklapa s postojećom rezervacijom u dvorani.", { status: 400 });
+        if (overlapping) {
+            const collisionTime = `${format(overlapping.startDateTime, "HH:mm")} - ${format(overlapping.endDateTime, "HH:mm")}`;
+            const collisionNote = overlapping.notes || (overlapping.status === 'BLOCKED' ? "Blokada dvorane" : "Bilo koji termin");
+            return new NextResponse(`Preklapanje s terminom: ${collisionTime} (${collisionNote})`, { status: 400 });
         }
 
         // @ts-ignore

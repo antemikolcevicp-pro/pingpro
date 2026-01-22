@@ -87,7 +87,10 @@ export default function BookingCalendar() {
         if (!bookingModal) return;
         setSaving(true);
         try {
-            const startStr = `${format(bookingModal.date, "yyyy-MM-dd")}T${bookingModal.time}:00`;
+            const [h, m] = bookingModal.time.split(':').map(Number);
+            const d = new Date(bookingModal.date);
+            d.setHours(h, m, 0, 0);
+            const startStr = d.toISOString();
 
             const res = await fetch("/api/bookings", {
                 method: "POST",

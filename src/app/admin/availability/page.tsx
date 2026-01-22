@@ -84,8 +84,11 @@ export default function UnifiedCalendar() {
         if (!actionModal) return;
         setSaving(true);
         try {
-            const startStr = `${format(actionModal.date, "yyyy-MM-dd")}T${actionModal.time}:00`;
-            const endStr = format(addMinutes(parseISO(startStr), form.duration), "yyyy-MM-dd'T'HH:mm:ss");
+            const [h, m] = actionModal.time.split(':').map(Number);
+            const d = new Date(actionModal.date);
+            d.setHours(h, m, 0, 0);
+            const startStr = d.toISOString();
+            const endStr = new Date(d.getTime() + form.duration * 60000).toISOString();
 
             const endpoint = actionType === 'BLOCK' ? "/api/admin/blocks" : "/api/bookings";
 
