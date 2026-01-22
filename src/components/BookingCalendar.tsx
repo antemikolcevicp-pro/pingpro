@@ -183,7 +183,11 @@ export default function BookingCalendar() {
             const [hours] = slot.time.split(':').map(Number);
             const canSokaz = hours >= 18 && !blockedLater;
 
-            if (gapMinutes === 30 && !canSokaz) {
+            // A gap is only "dead-locked" if it's a 30min gap trapped between activities
+            // (meaning you can't start a 60min session there OR it's not part of a 60min session starting earlier)
+            const isLonelyGap = gapMinutes === 30 && (idx === 0 || slots[idx - 1].activity);
+
+            if (isLonelyGap && !canSokaz) {
                 return { ...slot, isLocked: true, lockReason: "Premala rupa (30min)" };
             }
 
