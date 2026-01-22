@@ -17,7 +17,8 @@ export async function GET(req: Request) {
     if (!dateStr) return new NextResponse("Date required", { status: 400 });
 
     try {
-        const date = new Date(dateStr);
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
         // @ts-ignore
         const currentUserId = session.user.id;
         // @ts-ignore
@@ -30,15 +31,12 @@ export async function GET(req: Request) {
                 gte: startOfDay(date),
                 lte: endOfDay(date),
             },
-            status: { not: 'CANCELLED' }
+            status: { not: 'CANCELLED' },
+            OR: [
+                { locationId: locationId || "bakarić" },
+                { coachId: coachId }
+            ]
         };
-
-        if (coachId) {
-            where.coachId = coachId;
-        } else if (locationId) {
-            where.locationId = locationId;
-            where.coachId = null; // Hall bookings specifically
-        }
 
         const activities = await prisma.booking.findMany({
             where: where,
@@ -51,11 +49,22 @@ export async function GET(req: Request) {
                     }
                 }
             },
-            orderBy: { startDateTime: 'asc' }
+            orderBy: [
+                { startDateTime: 'asc' },
+                { userId: 'desc' }, // Hacky way to move current user, but better to sort in mem if needed
+            ]
         });
 
+        // Better: Sort in memory to strictly prioritize currentUserId
+        const sortedActivities = activities.sort((a, b) => {
+            if (a.userId === currentUserId && b.userId !== currentUserId) return -1;
+            if (a.userId !== currentUserId && b.userId === currentUserId) return 1;
+            return 0;
+        });
+
+
         // 🟢 SANITIZE NAMES FOR PRIVACY
-        const sanitizedActivities = activities.map(act => {
+        const sanitizedActivities = sortedActivities.map(act => {
             // Admin sees everything
             if (isAdmin) return act;
 

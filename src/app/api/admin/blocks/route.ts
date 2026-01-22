@@ -21,7 +21,8 @@ export async function GET(req: Request) {
     try {
         const where: any = {};
         if (dateStr) {
-            const date = new Date(dateStr);
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const date = new Date(y, m - 1, d);
             where.startDateTime = {
                 gte: startOfDay(date),
                 lte: endOfDay(date),
@@ -41,7 +42,10 @@ export async function GET(req: Request) {
             include: {
                 user: { select: { name: true, email: true } }
             },
-            orderBy: { startDateTime: 'asc' }
+            orderBy: [
+                { startDateTime: 'asc' },
+                { id: 'asc' }
+            ]
         });
         return NextResponse.json(activities);
     } catch (error) {
@@ -70,6 +74,20 @@ export async function POST(req: Request) {
             start.setHours(7, 0, 0, 0);
             end = new Date(start);
             end.setHours(23, 59, 59, 999);
+        }
+
+        // 🛡️ OVERLAP CHECK FOR ADMIN
+        const overlapping = await prisma.booking.findMany({
+            where: {
+                status: { not: 'CANCELLED' },
+                startDateTime: { lt: end },
+                endDateTime: { gt: start },
+                locationId: "bakarić" // Admins usually block the main hall
+            }
+        });
+
+        if (overlapping.length > 0) {
+            return new NextResponse("Novi termin se preklapa s postojećim rezervacijama.", { status: 400 });
         }
 
         const createBlock = async (s: Date, e: Date) => {

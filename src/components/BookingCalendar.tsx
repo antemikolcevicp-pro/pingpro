@@ -67,7 +67,7 @@ export default function BookingCalendar() {
         setLoading(true);
         try {
             const query = new URLSearchParams({
-                date: selectedDate.toISOString(),
+                date: format(selectedDate, "yyyy-MM-dd"),
                 coachId: selectedCoachId,
             });
 
@@ -149,6 +149,7 @@ export default function BookingCalendar() {
 
         while (current < endDay) {
             const timeStr = format(current, "HH:mm");
+            // Match ANY activity in this hall/location or for this coach
             const activity = activities.find(b => {
                 const bStart = parseISO(b.startDateTime);
                 const bEnd = parseISO(b.endDateTime);
@@ -164,21 +165,29 @@ export default function BookingCalendar() {
             current = addMinutes(current, SLOT_STEP);
         }
 
-        // --- GAP LOCKING LOGIC ---
+        // --- GAP AND SOKAZ LOGIC ---
         return slots.map((slot, idx) => {
             if (slot.activity) return slot;
 
             let gapMinutes = 0;
+            let blockedLater = false;
             for (let j = idx; j < slots.length; j++) {
-                if (slots[j].activity) break;
+                if (slots[j].activity) {
+                    blockedLater = true;
+                    break;
+                }
                 gapMinutes += SLOT_STEP;
             }
 
-            if (gapMinutes === 30) {
+            // SOKAZ logic: Only available if hall is free till end of day
+            const [hours] = slot.time.split(':').map(Number);
+            const canSokaz = hours >= 18 && !blockedLater;
+
+            if (gapMinutes === 30 && !canSokaz) {
                 return { ...slot, isLocked: true, lockReason: "Premala rupa (30min)" };
             }
 
-            return { ...slot, maxDuration: gapMinutes };
+            return { ...slot, maxDuration: gapMinutes, canSokaz };
         });
     };
 
@@ -248,9 +257,8 @@ export default function BookingCalendar() {
                                 slotsCount = Math.ceil(duration / SLOT_STEP);
                             }
 
-                            // SOKAZ logic: Available from 18:00
-                            const [hours] = slot.time.split(':').map(Number);
-                            const canSokaz = hours >= 18;
+                            // Using pre-calculated slot properties for SOKAZ and locking logic
+
 
                             return (
                                 <div key={idx} className={`slot-row ${slot.activity ? 'occupied' : 'free'} ${slot.isPast ? 'past' : ''}`}>
@@ -305,7 +313,7 @@ export default function BookingCalendar() {
                                                     <PlusCircle size={18} className="icon" />
                                                     <span>Trening s trenerom</span>
                                                 </button>
-                                                {canSokaz && (
+                                                {slot.canSokaz && (
                                                     <button
                                                         className="add-booking-btn sokaz-btn"
                                                         onClick={() => {
@@ -343,18 +351,20 @@ export default function BookingCalendar() {
 
                         <div className="modal-body">
                             <div className="form-row">
-                                <div className="form-group flex-1">
-                                    <label>Trajanje</label>
-                                    <select
-                                        value={form.duration}
-                                        onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) })}
-                                    >
-                                        {[60, 90, 120].filter(d => d <= bookingModal.maxDuration).map(d => (
-                                            <option key={d} value={d}>{d} min ({d / 60}h)</option>
-                                        ))}
-                                        {bookingModal.maxDuration < 60 && <option value={bookingModal.maxDuration}>{bookingModal.maxDuration} min</option>}
-                                    </select>
-                                </div>
+                                {bookingType === 'COACH' && (
+                                    <div className="form-group flex-1">
+                                        <label>Trajanje</label>
+                                        <select
+                                            value={form.duration}
+                                            onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) })}
+                                        >
+                                            {[60, 90, 120].filter(d => d <= bookingModal.maxDuration).map(d => (
+                                                <option key={d} value={d}>{d} min ({d / 60}h)</option>
+                                            ))}
+                                            {bookingModal.maxDuration < 60 && <option value={bookingModal.maxDuration}>{bookingModal.maxDuration} min</option>}
+                                        </select>
+                                    </div>
+                                )}
 
                                 {bookingType === 'COACH' && (
                                     <div className="form-group flex-1">

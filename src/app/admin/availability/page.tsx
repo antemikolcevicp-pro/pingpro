@@ -62,7 +62,7 @@ export default function UnifiedCalendar() {
         try {
             let res;
             if (viewMode === 'DAY') {
-                res = await fetch(`/api/admin/blocks?date=${selectedDate.toISOString()}`);
+                res = await fetch(`/api/admin/blocks?date=${format(selectedDate, "yyyy-MM-dd")}`);
             } else {
                 const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
                 const end = endOfWeek(selectedDate, { weekStartsOn: 1 });

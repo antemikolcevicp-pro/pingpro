@@ -42,27 +42,33 @@ export async function POST(req: Request) {
         }
 
         // Overlap check logic
-        // If coachId is provided, we check if the coach is busy
-        // If it's a hall-only (no coach), we check if the location is busy (for now, 1 booking = busy, later we'll use tableCount)
         const overlapQuery: any = {
             status: { not: 'CANCELLED' },
             startDateTime: { lt: endObj },
-            endDateTime: { gt: startObj }
+            endDateTime: { gt: startObj },
+            locationId: locationId || "bakarić"
         };
 
-        if (coachId) {
-            overlapQuery.coachId = coachId;
-        } else if (locationId) {
-            overlapQuery.locationId = locationId;
-            overlapQuery.coachId = null; // Specifically check hall-only blocks
+        if (!isSokaz) {
+            // For regular coach sessions, we specifically check that coach
+            // BUT we also must check if the hall is blocked by SOKAZ or Admin
+            overlapQuery.OR = [
+                { coachId: coachId },
+                { status: 'BLOCKED' },
+                { notes: { startsWith: 'SOKAZ' } }
+            ];
+            // Since we use OR, the top-level conditions (location, status, time) 
+            // will be applied to each branch of the OR.
         }
+        // If isSokaz is true, overlapQuery remains generic for the location,
+        // meaning ANY booking in that location (Coach or SOKAZ) will cause a conflict.
 
         const overlapping = await prisma.booking.findMany({
             where: overlapQuery
         });
 
         if (overlapping.length > 0) {
-            return new NextResponse("Termin se preklapa s postojećom rezervacijom.", { status: 400 });
+            return new NextResponse("Termin se preklapa s postojećom rezervacijom u dvorani.", { status: 400 });
         }
 
         // @ts-ignore
