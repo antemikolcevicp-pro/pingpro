@@ -43,8 +43,8 @@ export async function GET(req: Request) {
             return {
                 id: b.id,
                 date: b.startDateTime,
-                playerName: b.user.name,
-                coachName: b.coach.name,
+                playerName: b.user?.name || "Nepoznati igrač",
+                coachName: b.coach?.name || "Samo dvorana",
                 durationMinutes: dur,
                 hours: (dur / 60).toFixed(1)
             };

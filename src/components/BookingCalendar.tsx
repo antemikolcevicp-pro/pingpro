@@ -28,20 +28,53 @@ export default function BookingCalendar() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    // Resource Selection State
+    const [coaches, setCoaches] = useState<any[]>([]);
+    const [locations, setLocations] = useState<any[]>([]);
+    const [bookingType, setBookingType] = useState<'COACH' | 'HALL'>('COACH');
+    const [selectedCoachId, setSelectedCoachId] = useState<string>("cmknufbbk0000pkog6tq6kowi"); // Ante Mikolčević default
+    const [selectedLocationId, setSelectedLocationId] = useState<string>("bakarić");
+
     // Modal State
     const [bookingModal, setBookingModal] = useState<{ time: string, date: Date, maxDuration: number } | null>(null);
-    const [form, setForm] = useState({ duration: 60, notes: "" });
+    const [form, setForm] = useState({
+        duration: 60,
+        notes: "",
+        participantCount: 1,
+        tableCount: 1
+    });
 
     const days = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i));
 
     useEffect(() => {
+        const init = async () => {
+            const [cRes, lRes] = await Promise.all([
+                fetch("/api/coaches"),
+                fetch("/api/locations")
+            ]);
+            if (cRes.ok) setCoaches(await cRes.json());
+            if (lRes.ok) setLocations(await lRes.json());
+        };
+        init();
+    }, []);
+
+    useEffect(() => {
         fetchDayData();
-    }, [selectedDate]);
+    }, [selectedDate, selectedCoachId, selectedLocationId, bookingType]);
 
     const fetchDayData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/bookings/calendar-data?date=${selectedDate.toISOString()}`);
+            const query = new URLSearchParams({
+                date: selectedDate.toISOString(),
+            });
+            if (bookingType === 'COACH') {
+                query.append('coachId', selectedCoachId);
+            } else {
+                query.append('locationId', selectedLocationId);
+            }
+
+            const res = await fetch(`/api/bookings/calendar-data?${query.toString()}`);
             if (res.ok) {
                 const data = await res.json();
                 setActivities(data);
@@ -66,8 +99,10 @@ export default function BookingCalendar() {
                     startTime: startStr,
                     duration: form.duration,
                     notes: form.notes,
-                    // Default coach (Ante Mikolčević)
-                    coachId: activities[0]?.coachId || "cmknufbbk0000pkog6tq6kowi"
+                    coachId: bookingType === 'COACH' ? selectedCoachId : null,
+                    locationId: bookingType === 'HALL' ? selectedLocationId : (coaches.find(c => c.id === selectedCoachId)?.locationId || "bakarić"),
+                    participantCount: form.participantCount,
+                    tableCount: bookingType === 'HALL' ? form.tableCount : 1
                 }),
             });
 
@@ -127,14 +162,12 @@ export default function BookingCalendar() {
         return slots.map((slot, idx) => {
             if (slot.activity) return slot;
 
-            // Check gap from this slot onwards
             let gapMinutes = 0;
             for (let j = idx; j < slots.length; j++) {
                 if (slots[j].activity) break;
                 gapMinutes += SLOT_STEP;
             }
 
-            // User Rule: Rupe od pola sata zaključaj
             if (gapMinutes === 30) {
                 return { ...slot, isLocked: true, lockReason: "Premala rupa (30min)" };
             }
@@ -147,6 +180,52 @@ export default function BookingCalendar() {
 
     return (
         <div className="booking-timeline">
+            {/* RESOURCE SELECTOR */}
+            <div className="resource-selector glass card">
+                <div className="selector-tabs">
+                    <button
+                        className={`tab-btn ${bookingType === 'COACH' ? 'active' : ''}`}
+                        onClick={() => setBookingType('COACH')}
+                    >
+                        Trening s trenerom
+                    </button>
+                    <button
+                        className={`tab-btn ${bookingType === 'HALL' ? 'active' : ''}`}
+                        onClick={() => setBookingType('HALL')}
+                    >
+                        Samo dvorana
+                    </button>
+                </div>
+
+                <div className="selector-content">
+                    {bookingType === 'COACH' ? (
+                        <div className="select-group">
+                            <label>Izaberi trenera:</label>
+                            <select
+                                value={selectedCoachId}
+                                onChange={(e) => setSelectedCoachId(e.target.value)}
+                            >
+                                {coaches.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    ) : (
+                        <div className="select-group">
+                            <label>Izaberi lokaciju:</label>
+                            <select
+                                value={selectedLocationId}
+                                onChange={(e) => setSelectedLocationId(e.target.value)}
+                            >
+                                {locations.map(l => (
+                                    <option key={l.id} value={l.id}>{l.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* DATE STRIP */}
             <div className="date-strip glass">
                 <button className="nav-btn" onClick={() => setSelectedDate(addDays(selectedDate, -1))}><ChevronLeft size={20} /></button>
@@ -173,6 +252,11 @@ export default function BookingCalendar() {
                 <div className="timeline-header">
                     <CalendarIcon size={18} color="var(--primary)" />
                     <h3>{format(selectedDate, "EEEE, d. MMMM", { locale: hr })}</h3>
+                    <div className="header-badge">
+                        {bookingType === 'COACH'
+                            ? coaches.find(c => c.id === selectedCoachId)?.name
+                            : locations.find(l => l.id === selectedLocationId)?.name}
+                    </div>
                 </div>
 
                 <div className="timeline-grid">
@@ -203,11 +287,16 @@ export default function BookingCalendar() {
                                                         <span className="type-badge">
                                                             {slot.activity.status === 'BLOCKED' ? <Lock size={12} /> : <User size={12} />}
                                                             {isMine ? 'MOJA REZERVACIJA' : slot.activity.status === 'BLOCKED' ? 'ZAUZETO' : 'RESERVIRANO'}
+                                                            {slot.activity.status === 'HALL_ONLY' && ' (SAMO DVORANA)'}
                                                         </span>
                                                         <span className="title">
                                                             {slot.activity.user?.name || (slot.activity.status === 'BLOCKED' ? 'Blokirano' : 'Rezervirano')}
                                                         </span>
-                                                        <span className="time-range">{format(parseISO(slot.activity.startDateTime), "HH:mm")} - {format(parseISO(slot.activity.endDateTime), "HH:mm")}</span>
+                                                        <span className="time-range">
+                                                            {format(parseISO(slot.activity.startDateTime), "HH:mm")} - {format(parseISO(slot.activity.endDateTime), "HH:mm")}
+                                                            {slot.activity.participantCount > 1 && ` • ${slot.activity.participantCount} osobe`}
+                                                            {slot.activity.tableCount > 1 && ` • ${slot.activity.tableCount} stola`}
+                                                        </span>
                                                     </div>
 
                                                     {isMine && (
@@ -248,32 +337,47 @@ export default function BookingCalendar() {
                         <div className="modal-header">
                             <div>
                                 <h2>Rezervacija Termina</h2>
+                                <p>{bookingType === 'COACH' ? 'Trening s trenerom' : 'Najam dvorane'}</p>
                                 <p>{format(bookingModal.date, "dd.MM.")} u <strong className="highlight">{bookingModal.time}</strong>h</p>
                             </div>
                             <button className="close-btn" onClick={() => setBookingModal(null)}><X /></button>
                         </div>
 
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label>Trajanje treninga</label>
-                                <select
-                                    value={form.duration}
-                                    onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) })}
-                                >
-                                    {[60, 90, 120].filter(d => d <= bookingModal.maxDuration).map(d => (
-                                        <option key={d} value={d}>{d} min ({d / 60}h)</option>
-                                    ))}
-                                    {bookingModal.maxDuration < 60 && <option value={bookingModal.maxDuration}>{bookingModal.maxDuration} min</option>}
-                                </select>
-                                {bookingModal.maxDuration < 120 && (
-                                    <p className="limit-hint">Maksimalno trajanje: {bookingModal.maxDuration} min (zbog preklapanja)</p>
-                                )}
+                            <div className="form-row">
+                                <div className="form-group flex-1">
+                                    <label>Trajanje</label>
+                                    <select
+                                        value={form.duration}
+                                        onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) })}
+                                    >
+                                        {[60, 90, 120].filter(d => d <= bookingModal.maxDuration).map(d => (
+                                            <option key={d} value={d}>{d} min ({d / 60}h)</option>
+                                        ))}
+                                        {bookingModal.maxDuration < 60 && <option value={bookingModal.maxDuration}>{bookingModal.maxDuration} min</option>}
+                                    </select>
+                                </div>
+
+                                <div className="form-group flex-1">
+                                    <label>{bookingType === 'COACH' ? 'Broj osoba' : 'Broj stolova'}</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="10"
+                                        value={bookingType === 'COACH' ? form.participantCount : form.tableCount}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value) || 1;
+                                            if (bookingType === 'COACH') setForm({ ...form, participantCount: val });
+                                            else setForm({ ...form, tableCount: val });
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             <div className="form-group">
                                 <label>Napomena (opcionalno)</label>
                                 <input
-                                    placeholder="Npr. Trening s Nevenom"
+                                    placeholder="Dodatne informacije..."
                                     value={form.notes}
                                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                                 />
@@ -295,6 +399,16 @@ export default function BookingCalendar() {
                 .booking-timeline { padding: 1rem 0; animation: fadeIn 0.4s ease; }
                 .highlight { color: var(--primary); }
 
+                /* Resource Selector */
+                .resource-selector { padding: 1.5rem; border-radius: 24px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.08); }
+                .selector-tabs { display: flex; gap: 10px; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 12px; }
+                .tab-btn { flex: 1; padding: 0.75rem; border-radius: 8px; border: none; background: none; color: var(--text-muted); cursor: pointer; font-weight: 700; transition: 0.3s; }
+                .tab-btn.active { background: var(--primary); color: #fff; }
+                .selector-content { display: flex; flex-direction: column; gap: 10px; }
+                .select-group { display: flex; flex-direction: column; gap: 8px; }
+                .select-group label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+                .select-group select { padding: 0.75rem 1rem; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; cursor: pointer; }
+
                 /* Date Strip */
                 .date-strip { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.08); }
                 .scroll-area { display: flex; gap: 0.75rem; overflow-x: auto; scrollbar-width: none; flex: 1; padding: 4px; }
@@ -313,7 +427,8 @@ export default function BookingCalendar() {
                 /* Timeline */
                 .timeline-container { padding: 0; overflow: hidden; border-radius: 24px; }
                 .timeline-header { padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); display: flex; align-items: center; gap: 0.75rem; }
-                .timeline-header h3 { margin: 0; font-size: 1.1rem; }
+                .timeline-header h3 { margin: 0; font-size: 1.1rem; flex: 1; }
+                .header-badge { background: rgba(227, 6, 19, 0.1); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; border: 1px solid rgba(227, 6, 19, 0.2); }
                 
                 .timeline-grid { max-height: 650px; overflow-y: auto; scrollbar-width: thin; }
                 .slot-row { display: flex; height: 60px; border-bottom: 1px solid rgba(255,255,255,0.03); }
@@ -333,6 +448,7 @@ export default function BookingCalendar() {
                 .activity-block.BLOCKED { background: rgba(227, 6, 19, 0.15); border: 1px solid rgba(227, 6, 19, 0.3); border-left: 4px solid var(--primary); }
                 .activity-block.CONFIRMED { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid var(--border); }
                 .activity-block.PENDING { background: rgba(255, 255, 255, 0.05); border: 1px dotted rgba(255, 255, 255, 0.2); border-left: 4px solid #fff; }
+                .activity-block.HALL_ONLY { background: rgba(0, 150, 255, 0.1); border: 1px solid rgba(0, 150, 255, 0.3); border-left: 4px solid #0096ff; }
                 .activity-block.mine { background: linear-gradient(to right, rgba(0, 75, 147, 0.25), rgba(0, 75, 147, 0.1)); border: 1px solid var(--secondary); border-left: 4px solid var(--secondary); }
 
                 .activity-info { display: flex; flex-direction: column; gap: 2px; }
@@ -365,6 +481,8 @@ export default function BookingCalendar() {
                 .modal-header h2 { font-size: 1.6rem; margin: 0; }
                 .close-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; }
                 
+                .form-row { display: flex; gap: 20px; margin-bottom: 1.5rem; }
+                .flex-1 { flex: 1; }
                 .form-group { margin-bottom: 1.5rem; }
                 .form-group label { display: block; font-size: 0.8rem; margin-bottom: 0.5rem; color: var(--text-muted); }
                 .form-group select, .form-group input { width: 100%; padding: 0.75rem 1rem; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; }

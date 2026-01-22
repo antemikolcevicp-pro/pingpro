@@ -11,6 +11,9 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const dateStr = searchParams.get("date");
+    const coachId = searchParams.get("coachId");
+    const locationId = searchParams.get("locationId");
+
     if (!dateStr) return new NextResponse("Date required", { status: 400 });
 
     try {
@@ -22,14 +25,23 @@ export async function GET(req: Request) {
         // @ts-ignore
         const isAdmin = session.user.role === Role.ADMIN || session.user.role === Role.COACH;
 
-        const activities = await prisma.booking.findMany({
-            where: {
-                startDateTime: {
-                    gte: startOfDay(date),
-                    lte: endOfDay(date),
-                },
-                status: { not: 'CANCELLED' }
+        const where: any = {
+            startDateTime: {
+                gte: startOfDay(date),
+                lte: endOfDay(date),
             },
+            status: { not: 'CANCELLED' }
+        };
+
+        if (coachId) {
+            where.coachId = coachId;
+        } else if (locationId) {
+            where.locationId = locationId;
+            where.coachId = null; // Hall bookings specifically
+        }
+
+        const activities = await prisma.booking.findMany({
+            where: where,
             include: {
                 user: {
                     select: {

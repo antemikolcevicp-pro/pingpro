@@ -43,7 +43,7 @@ export async function GET(req: Request) {
                         <p>Bok <strong>${booking.user.name}</strong>,</p>
                         <p>Ovo je samo podsjetnik da imaš termin za stolni tenis danas.</p>
                         <p><strong>Vrijeme:</strong> ${timeStr}h</p>
-                        <p><strong>Trener:</strong> ${booking.coach.name}</p>
+                        <p><strong>Trener:</strong> ${booking.coach?.name || "Samo dvorana"}</p>
                         <hr />
                         <p>Vidimo se u dvorani!</p>
                     </div>

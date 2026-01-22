@@ -233,7 +233,7 @@ export default function UnifiedCalendar() {
                                                             {slot.activity.status === 'BLOCKED' ? <Lock size={12} /> : <User size={12} />}
                                                             {slot.activity.status === 'BLOCKED' ? 'ZAUZETO' : slot.activity.status === 'PENDING' ? 'NA ČEKANJU' : 'RESERVIRANO'}
                                                         </span>
-                                                        <span className="title">{slot.activity.notes || slot.activity.user?.name}</span>
+                                                        <span className="title">{slot.activity.notes || slot.activity.user?.name || "Termin"}</span>
                                                         <span className="time-range">{format(parseISO(slot.activity.startDateTime), "HH:mm")} - {format(parseISO(slot.activity.endDateTime), "HH:mm")}</span>
                                                     </div>
                                                     <div className="activity-actions">

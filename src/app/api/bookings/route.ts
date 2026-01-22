@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { startTime, coachId, duration, notes } = await req.json();
+        const { startTime, coachId, duration, notes, participantCount, tableCount, locationId } = await req.json();
         const slotDuration = duration || 90;
 
         // @ts-ignore
@@ -21,14 +21,24 @@ export async function POST(req: Request) {
         const startObj = parseISO(startTime);
         const endObj = addMinutes(startObj, slotDuration);
 
-        // Robust overlap check
+        // Overlap check logic
+        // If coachId is provided, we check if the coach is busy
+        // If it's a hall-only (no coach), we check if the location is busy (for now, 1 booking = busy, later we'll use tableCount)
+        const overlapQuery: any = {
+            status: { not: 'CANCELLED' },
+            startDateTime: { lt: endObj },
+            endDateTime: { gt: startObj }
+        };
+
+        if (coachId) {
+            overlapQuery.coachId = coachId;
+        } else if (locationId) {
+            overlapQuery.locationId = locationId;
+            overlapQuery.coachId = null; // Specifically check hall-only blocks
+        }
+
         const overlapping = await prisma.booking.findMany({
-            where: {
-                coachId,
-                status: { not: 'CANCELLED' },
-                startDateTime: { lt: endObj },
-                endDateTime: { gt: startObj }
-            }
+            where: overlapQuery
         });
 
         if (overlapping.length > 0) {
@@ -37,18 +47,25 @@ export async function POST(req: Request) {
 
         // @ts-ignore
         const userRole = session.user.role;
-        const initialStatus = (userRole === 'ADMIN' || userRole === 'COACH') ? 'CONFIRMED' : 'PENDING';
+        let initialStatus: any = (userRole === 'ADMIN' || userRole === 'COACH') ? 'CONFIRMED' : 'PENDING';
+
+        if (!coachId) {
+            initialStatus = 'HALL_ONLY';
+        }
 
         const booking = await prisma.booking.create({
             data: {
                 userId,
-                coachId,
+                coachId: coachId || null,
+                locationId: locationId || null,
                 startDateTime: startObj,
                 endDateTime: endObj,
                 status: initialStatus,
-                notes
+                notes,
+                participantCount: participantCount ? parseInt(participantCount) : 1,
+                tableCount: tableCount ? parseInt(tableCount) : 1,
             },
-            include: { coach: true, user: true }
+            include: { coach: true, user: true, location: true }
         });
 
         // Email Notification to Coach

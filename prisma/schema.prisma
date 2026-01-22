@@ -89,31 +89,49 @@ model Team {
   createdAt   DateTime @default(now())
 }
 
+model Location {
+  id                String   @id @default(cuid())
+  name              String   // npr. "Bakarić", "Velesajam"
+  address           String?
+  totalTables       Int      @default(1)
+  isActive          Boolean  @default(true)
+  bookings          Booking[]
+  availabilitySlots AvailabilitySlot[]
+  bookingBlocks     BookingBlock[]
+  createdAt         DateTime @default(now())
+}
+
 model AvailabilitySlot {
   id                  String   @id @default(cuid())
-  coachId             String
+  coachId             String?
+  locationId          String?
   dayOfWeek           Int      // 0-6 (0=Nedjelja, 1=Ponedjeljak)
   startTime           String   // "17:00"
   endTime             String   // "21:00"
   slotDurationMinutes Int      @default(60)
   isActive            Boolean  @default(true)
-  coach               User     @relation(fields: [coachId], references: [id])
+  coach               User?     @relation(fields: [coachId], references: [id])
+  location            Location? @relation(fields: [locationId], references: [id])
 }
 
 model Booking {
-  id            String   @id @default(cuid())
-  userId        String
-  coachId       String
-  startDateTime DateTime
-  endDateTime   DateTime
-  status        BookingStatus @default(CONFIRMED)
-  price         Float?   @default(0)
-  notes         String?
-  reminderSent  Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  id                String   @id @default(cuid())
+  userId            String
+  coachId           String?
+  locationId        String?
+  startDateTime     DateTime
+  endDateTime       DateTime
+  status            BookingStatus @default(CONFIRMED)
+  price             Float?   @default(0)
+  notes             String?
+  participantCount  Int?     @default(1)
+  tableCount        Int?     @default(1)
+  reminderSent      Boolean  @default(false)
+  createdAt         DateTime @default(now())
   
-  user          User     @relation("PlayerBookings", fields: [userId], references: [id])
-  coach         User     @relation("CoachBookings", fields: [coachId], references: [id])
+  user              User      @relation("PlayerBookings", fields: [userId], references: [id])
+  coach             User?     @relation("CoachBookings", fields: [coachId], references: [id])
+  location          Location? @relation(fields: [locationId], references: [id])
 }
 
 enum BookingStatus {
@@ -122,13 +140,16 @@ enum BookingStatus {
   PENDING
   BLOCKED
   COMPLETED
+  HALL_ONLY // Dodano za lakše filtriranje, iako možemo koristiti i coachId == null
 }
 
 model BookingBlock {
   id            String   @id @default(cuid())
-  coachId       String
+  coachId       String?
+  locationId    String?
   startDateTime DateTime
   endDateTime   DateTime
   reason        String?
-  coach         User     @relation(fields: [coachId], references: [id])
+  coach         User?     @relation(fields: [coachId], references: [id])
+  location      Location? @relation(fields: [locationId], references: [id])
 }
