@@ -30,12 +30,10 @@ export default function BookingCalendar() {
 
     // Resource Selection State
     const [coaches, setCoaches] = useState<any[]>([]);
-    const [locations, setLocations] = useState<any[]>([]);
-    const [bookingType, setBookingType] = useState<'COACH' | 'HALL'>('COACH');
     const [selectedCoachId, setSelectedCoachId] = useState<string>("cmknufbbk0000pkog6tq6kowi"); // Ante Mikolčević default
-    const [selectedLocationId, setSelectedLocationId] = useState<string>("bakarić");
 
     // Modal State
+    const [bookingType, setBookingType] = useState<'COACH' | 'SOKAZ'>('COACH');
     const [bookingModal, setBookingModal] = useState<{ time: string, date: Date, maxDuration: number } | null>(null);
     const [form, setForm] = useState({
         duration: 60,
@@ -48,31 +46,30 @@ export default function BookingCalendar() {
 
     useEffect(() => {
         const init = async () => {
-            const [cRes, lRes] = await Promise.all([
-                fetch("/api/coaches"),
-                fetch("/api/locations")
-            ]);
-            if (cRes.ok) setCoaches(await cRes.json());
-            if (lRes.ok) setLocations(await lRes.json());
+            const cRes = await fetch("/api/coaches");
+            if (cRes.ok) {
+                const data = await cRes.json();
+                setCoaches(data);
+                // Ensure default is set to a valid coach from the list if current default is missing
+                if (data.length > 0 && !data.find((c: any) => c.id === selectedCoachId)) {
+                    setSelectedCoachId(data[0].id);
+                }
+            }
         };
         init();
     }, []);
 
     useEffect(() => {
         fetchDayData();
-    }, [selectedDate, selectedCoachId, selectedLocationId, bookingType]);
+    }, [selectedDate, selectedCoachId]);
 
     const fetchDayData = async () => {
         setLoading(true);
         try {
             const query = new URLSearchParams({
                 date: selectedDate.toISOString(),
+                coachId: selectedCoachId,
             });
-            if (bookingType === 'COACH') {
-                query.append('coachId', selectedCoachId);
-            } else {
-                query.append('locationId', selectedLocationId);
-            }
 
             const res = await fetch(`/api/bookings/calendar-data?${query.toString()}`);
             if (res.ok) {
@@ -100,9 +97,10 @@ export default function BookingCalendar() {
                     duration: form.duration,
                     notes: form.notes,
                     coachId: bookingType === 'COACH' ? selectedCoachId : null,
-                    locationId: bookingType === 'HALL' ? selectedLocationId : (coaches.find(c => c.id === selectedCoachId)?.locationId || "bakarić"),
+                    locationId: "bakarić",
+                    isSokaz: bookingType === 'SOKAZ',
                     participantCount: form.participantCount,
-                    tableCount: bookingType === 'HALL' ? form.tableCount : 1
+                    tableCount: 1
                 }),
             });
 
@@ -135,6 +133,13 @@ export default function BookingCalendar() {
         }
     };
 
+    const isPast = (date: Date, timeStr: string) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const slotDate = new Date(date);
+        slotDate.setHours(hours, minutes, 0, 0);
+        return slotDate < new Date();
+    };
+
     const generateTimeline = () => {
         const slots: any[] = [];
         let current = startOfDay(selectedDate);
@@ -153,7 +158,8 @@ export default function BookingCalendar() {
             slots.push({
                 time: timeStr,
                 date: new Date(current),
-                activity: activity || null
+                activity: activity || null,
+                isPast: isPast(current, timeStr)
             });
             current = addMinutes(current, SLOT_STEP);
         }
@@ -180,49 +186,20 @@ export default function BookingCalendar() {
 
     return (
         <div className="booking-timeline">
-            {/* RESOURCE SELECTOR */}
+            {/* RESOURCE SELECTOR - COACH ONLY NOW */}
             <div className="resource-selector glass card">
-                <div className="selector-tabs">
-                    <button
-                        className={`tab-btn ${bookingType === 'COACH' ? 'active' : ''}`}
-                        onClick={() => setBookingType('COACH')}
-                    >
-                        Trening s trenerom
-                    </button>
-                    <button
-                        className={`tab-btn ${bookingType === 'HALL' ? 'active' : ''}`}
-                        onClick={() => setBookingType('HALL')}
-                    >
-                        Samo dvorana
-                    </button>
-                </div>
-
                 <div className="selector-content">
-                    {bookingType === 'COACH' ? (
-                        <div className="select-group">
-                            <label>Izaberi trenera:</label>
-                            <select
-                                value={selectedCoachId}
-                                onChange={(e) => setSelectedCoachId(e.target.value)}
-                            >
-                                {coaches.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    ) : (
-                        <div className="select-group">
-                            <label>Izaberi lokaciju:</label>
-                            <select
-                                value={selectedLocationId}
-                                onChange={(e) => setSelectedLocationId(e.target.value)}
-                            >
-                                {locations.map(l => (
-                                    <option key={l.id} value={l.id}>{l.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+                    <div className="select-group">
+                        <label>Izaberi trenera:</label>
+                        <select
+                            value={selectedCoachId}
+                            onChange={(e) => setSelectedCoachId(e.target.value)}
+                        >
+                            {coaches.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -253,9 +230,7 @@ export default function BookingCalendar() {
                     <CalendarIcon size={18} color="var(--primary)" />
                     <h3>{format(selectedDate, "EEEE, d. MMMM", { locale: hr })}</h3>
                     <div className="header-badge">
-                        {bookingType === 'COACH'
-                            ? coaches.find(c => c.id === selectedCoachId)?.name
-                            : locations.find(l => l.id === selectedLocationId)?.name}
+                        {coaches.find(c => c.id === selectedCoachId)?.name}
                     </div>
                 </div>
 
@@ -273,8 +248,12 @@ export default function BookingCalendar() {
                                 slotsCount = Math.ceil(duration / SLOT_STEP);
                             }
 
+                            // SOKAZ logic: Available from 18:00
+                            const [hours] = slot.time.split(':').map(Number);
+                            const canSokaz = hours >= 18;
+
                             return (
-                                <div key={idx} className={`slot-row ${slot.activity ? 'occupied' : 'free'}`}>
+                                <div key={idx} className={`slot-row ${slot.activity ? 'occupied' : 'free'} ${slot.isPast ? 'past' : ''}`}>
                                     <div className="time-col">{slot.time}</div>
                                     <div className="action-col">
                                         {slot.activity ? (
@@ -287,7 +266,7 @@ export default function BookingCalendar() {
                                                         <span className="type-badge">
                                                             {slot.activity.status === 'BLOCKED' ? <Lock size={12} /> : <User size={12} />}
                                                             {isMine ? 'MOJA REZERVACIJA' : slot.activity.status === 'BLOCKED' ? 'ZAUZETO' : 'RESERVIRANO'}
-                                                            {slot.activity.status === 'HALL_ONLY' && ' (SAMO DVORANA)'}
+                                                            {slot.activity.notes?.startsWith('SOKAZ') && ' (SOKAZ)'}
                                                         </span>
                                                         <span className="title">
                                                             {slot.activity.user?.name || (slot.activity.status === 'BLOCKED' ? 'Blokirano' : 'Rezervirano')}
@@ -295,7 +274,6 @@ export default function BookingCalendar() {
                                                         <span className="time-range">
                                                             {format(parseISO(slot.activity.startDateTime), "HH:mm")} - {format(parseISO(slot.activity.endDateTime), "HH:mm")}
                                                             {slot.activity.participantCount > 1 && ` • ${slot.activity.participantCount} osobe`}
-                                                            {slot.activity.tableCount > 1 && ` • ${slot.activity.tableCount} stola`}
                                                         </span>
                                                     </div>
 
@@ -310,17 +288,37 @@ export default function BookingCalendar() {
                                             <div className="locked-slot">
                                                 <Lock size={14} /> <span>Zaključano</span>
                                             </div>
+                                        ) : slot.isPast ? (
+                                            <div className="past-slot">
+                                                <span>Termin prošao</span>
+                                            </div>
                                         ) : (
-                                            <button
-                                                className="add-booking-btn"
-                                                onClick={() => {
-                                                    setBookingModal({ time: slot.time, date: slot.date, maxDuration: slot.maxDuration });
-                                                    setForm({ ...form, duration: Math.min(60, slot.maxDuration) });
-                                                }}
-                                            >
-                                                <PlusCircle size={18} className="icon" />
-                                                <span>Slobodno - Rezerviraj</span>
-                                            </button>
+                                            <div className="booking-actions">
+                                                <button
+                                                    className="add-booking-btn"
+                                                    onClick={() => {
+                                                        setBookingType('COACH');
+                                                        setBookingModal({ time: slot.time, date: slot.date, maxDuration: slot.maxDuration });
+                                                        setForm({ ...form, duration: Math.min(60, slot.maxDuration) });
+                                                    }}
+                                                >
+                                                    <PlusCircle size={18} className="icon" />
+                                                    <span>Trening s trenerom</span>
+                                                </button>
+                                                {canSokaz && (
+                                                    <button
+                                                        className="add-booking-btn sokaz-btn"
+                                                        onClick={() => {
+                                                            setBookingType('SOKAZ');
+                                                            setBookingModal({ time: slot.time, date: slot.date, maxDuration: slot.maxDuration });
+                                                            setForm({ ...form, duration: Math.min(60, slot.maxDuration) });
+                                                        }}
+                                                    >
+                                                        <CalendarIcon size={18} className="icon" />
+                                                        <span>Rezerviraj dvoranu (SOKAZ)</span>
+                                                    </button>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -337,7 +335,7 @@ export default function BookingCalendar() {
                         <div className="modal-header">
                             <div>
                                 <h2>Rezervacija Termina</h2>
-                                <p>{bookingType === 'COACH' ? 'Trening s trenerom' : 'Najam dvorane'}</p>
+                                <p>{bookingType === 'COACH' ? 'Trening s trenerom' : 'Rezervacija dvorane (SOKAZ)'}</p>
                                 <p>{format(bookingModal.date, "dd.MM.")} u <strong className="highlight">{bookingModal.time}</strong>h</p>
                             </div>
                             <button className="close-btn" onClick={() => setBookingModal(null)}><X /></button>
@@ -358,20 +356,18 @@ export default function BookingCalendar() {
                                     </select>
                                 </div>
 
-                                <div className="form-group flex-1">
-                                    <label>{bookingType === 'COACH' ? 'Broj osoba' : 'Broj stolova'}</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="10"
-                                        value={bookingType === 'COACH' ? form.participantCount : form.tableCount}
-                                        onChange={(e) => {
-                                            const val = parseInt(e.target.value) || 1;
-                                            if (bookingType === 'COACH') setForm({ ...form, participantCount: val });
-                                            else setForm({ ...form, tableCount: val });
-                                        }}
-                                    />
-                                </div>
+                                {bookingType === 'COACH' && (
+                                    <div className="form-group flex-1">
+                                        <label>Broj osoba</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            value={form.participantCount}
+                                            onChange={(e) => setForm({ ...form, participantCount: parseInt(e.target.value) || 1 })}
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="form-group">
@@ -401,9 +397,6 @@ export default function BookingCalendar() {
 
                 /* Resource Selector */
                 .resource-selector { padding: 1.5rem; border-radius: 24px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.08); }
-                .selector-tabs { display: flex; gap: 10px; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 12px; }
-                .tab-btn { flex: 1; padding: 0.75rem; border-radius: 8px; border: none; background: none; color: var(--text-muted); cursor: pointer; font-weight: 700; transition: 0.3s; }
-                .tab-btn.active { background: var(--primary); color: #fff; }
                 .selector-content { display: flex; flex-direction: column; gap: 10px; }
                 .select-group { display: flex; flex-direction: column; gap: 8px; }
                 .select-group label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
@@ -448,8 +441,9 @@ export default function BookingCalendar() {
                 .activity-block.BLOCKED { background: rgba(227, 6, 19, 0.15); border: 1px solid rgba(227, 6, 19, 0.3); border-left: 4px solid var(--primary); }
                 .activity-block.CONFIRMED { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid var(--border); }
                 .activity-block.PENDING { background: rgba(255, 255, 255, 0.05); border: 1px dotted rgba(255, 255, 255, 0.2); border-left: 4px solid #fff; }
-                .activity-block.HALL_ONLY { background: rgba(0, 150, 255, 0.1); border: 1px solid rgba(0, 150, 255, 0.3); border-left: 4px solid #0096ff; }
                 .activity-block.mine { background: linear-gradient(to right, rgba(0, 75, 147, 0.25), rgba(0, 75, 147, 0.1)); border: 1px solid var(--secondary); border-left: 4px solid var(--secondary); }
+                
+                .slot-row.past { opacity: 0.4; pointer-events: none; filter: grayscale(0.8); }
 
                 .activity-info { display: flex; flex-direction: column; gap: 2px; }
                 .type-badge { font-size: 0.6rem; font-weight: 900; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.5); }
@@ -460,14 +454,22 @@ export default function BookingCalendar() {
                 .cancel-btn:hover { background: #ff4444; color: #fff; transform: scale(1.1); }
 
                 /* Free Slots */
+                .booking-actions { display: flex; gap: 10px; width: 100%; height: 100%; }
                 .add-booking-btn { 
-                    width: 100%; height: 100%; border: 1px dashed rgba(255,255,255,0.05); 
+                    flex: 1; height: 100%; border: 1px dashed rgba(255,255,255,0.05); 
                     background: none; border-radius: 10px; cursor: pointer;
                     display: flex; align-items: center; gap: 10px; padding: 0 15px;
-                    color: rgba(255,255,255,0.15); transition: all 0.2s;
+                    color: rgba(255,255,255,0.15); transition: all 0.2s; font-size: 0.8rem;
                 }
                 .add-booking-btn:hover { background: rgba(227, 6, 19, 0.03); border-color: var(--primary); color: var(--primary); }
                 .add-booking-btn .icon { opacity: 0.3; }
+                .sokaz-btn { border-style: solid; border-color: rgba(0, 150, 255, 0.2); color: rgba(0, 150, 255, 0.6); }
+                .sokaz-btn:hover { background: rgba(0, 150, 255, 0.05); border-color: #0096ff; color: #0096ff; }
+
+                .past-slot { 
+                    width: 100%; height: 100%; display: flex; align-items: center; gap: 8px; 
+                    color: rgba(255,255,255,0.1); font-size: 0.8rem; padding: 0 15px; 
+                }
 
                 .locked-slot { 
                     width: 100%; height: 100%; display: flex; align-items: center; gap: 8px; 

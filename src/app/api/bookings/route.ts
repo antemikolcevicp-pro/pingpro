@@ -13,13 +13,26 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { startTime, coachId, duration, notes, participantCount, tableCount, locationId } = await req.json();
+        const { startTime, coachId, duration, notes, participantCount, tableCount, locationId, isSokaz } = await req.json();
         const slotDuration = duration || 90;
 
         // @ts-ignore
         const userId = session.user.id;
+        // @ts-ignore
+        const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'COACH';
+
         const startObj = parseISO(startTime);
         const endObj = addMinutes(startObj, slotDuration);
+
+        // 🛡️ PAST BOOKING PREVENTION
+        if (!isAdmin) {
+            const now = new Date();
+            // Allow booking if it's at least 15 minutes away to avoid accidental past bookings
+            const leadTime = addMinutes(now, 15);
+            if (startObj < leadTime) {
+                return new NextResponse("Nije moguće rezervirati termin u prošlosti ili koji počinje za manje od 15 minuta.", { status: 400 });
+            }
+        }
 
         // Overlap check logic
         // If coachId is provided, we check if the coach is busy
@@ -57,11 +70,11 @@ export async function POST(req: Request) {
             data: {
                 userId,
                 coachId: coachId || null,
-                locationId: locationId || null,
+                locationId: locationId || "bakarić", // Defaulting as we hide UI
                 startDateTime: startObj,
                 endDateTime: endObj,
                 status: initialStatus,
-                notes,
+                notes: isSokaz ? `SOKAZ: ${notes || ""}` : notes,
                 participantCount: participantCount ? parseInt(participantCount) : 1,
                 tableCount: tableCount ? parseInt(tableCount) : 1,
             },
