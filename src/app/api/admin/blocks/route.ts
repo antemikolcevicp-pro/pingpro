@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { parseISO, startOfDay, endOfDay } from "date-fns";
+import { parseISO, startOfDay, endOfDay, addMinutes, addDays } from "date-fns";
 import { Role } from "@prisma/client";
 
 export async function GET(req: Request) {
@@ -15,6 +15,8 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const dateStr = searchParams.get("date");
+    const startDateStr = searchParams.get("startDate");
+    const endDateStr = searchParams.get("endDate");
 
     try {
         const where: any = {};
@@ -23,6 +25,11 @@ export async function GET(req: Request) {
             where.startDateTime = {
                 gte: startOfDay(date),
                 lte: endOfDay(date),
+            };
+        } else if (startDateStr && endDateStr) {
+            where.startDateTime = {
+                gte: new Date(startDateStr),
+                lte: new Date(endDateStr),
             };
         } else {
             // By default, just show BLOCKED ones if no date provided
@@ -52,23 +59,45 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { startTime, endTime, notes } = await req.json();
+        const { startTime, endTime, notes, isAllDay, recurrence } = await req.json();
 
         // @ts-ignore
         const userId = session.user.id;
+        const start = parseISO(startTime);
+        let end = endTime ? parseISO(endTime) : addMinutes(start, 90);
 
-        const block = await prisma.booking.create({
-            data: {
-                userId,
-                coachId: userId,
-                startDateTime: parseISO(startTime),
-                endDateTime: parseISO(endTime),
-                status: 'BLOCKED',
-                notes: notes || "Dvorana zauzeta"
+        if (isAllDay) {
+            start.setHours(7, 0, 0, 0);
+            end = new Date(start);
+            end.setHours(23, 59, 59, 999);
+        }
+
+        const createBlock = async (s: Date, e: Date) => {
+            return prisma.booking.create({
+                data: {
+                    userId,
+                    coachId: userId,
+                    startDateTime: s,
+                    endDateTime: e,
+                    status: 'BLOCKED',
+                    notes: notes || "Dvorana zauzeta"
+                }
+            });
+        };
+
+        const blocks = [];
+        const initialBlock = await createBlock(start, end);
+        blocks.push(initialBlock);
+
+        if (recurrence === 'WEEKLY') {
+            for (let i = 1; i <= 4; i++) {
+                const s = addDays(start, i * 7);
+                const e = addDays(end, i * 7);
+                blocks.push(await createBlock(s, e));
             }
-        });
+        }
 
-        return NextResponse.json(block);
+        return NextResponse.json(blocks);
     } catch (error) {
         console.error(error);
         return new NextResponse("Internal Server Error", { status: 500 });

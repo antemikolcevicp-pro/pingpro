@@ -238,8 +238,8 @@ export default function BookingCalendar() {
                     {loading ? (
                         <div className="loader"><Loader2 className="animate-spin" size={32} /></div>
                     ) : (
-                        timeline.map((slot, idx) => {
-                            const isNewActivity = idx === 0 || (slot.activity && timeline[idx - 1].activity?.id !== slot.activity.id);
+                        timeline.filter(slot => !slot.isPast).map((slot, idx) => {
+                            const isNewActivity = idx === 0 || (slot.activity && timeline.filter(s => !s.isPast)[idx - 1].activity?.id !== slot.activity.id);
                             const isMine = slot.activity?.userId === (session?.user as any)?.id;
 
                             let slotsCount = 1;

@@ -22,7 +22,14 @@ export async function POST(req: Request) {
         const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'COACH';
 
         const startObj = parseISO(startTime);
-        const endObj = addMinutes(startObj, slotDuration);
+
+        let endObj;
+        if (isSokaz) {
+            endObj = new Date(startObj);
+            endObj.setHours(23, 59, 59, 999);
+        } else {
+            endObj = addMinutes(startObj, slotDuration);
+        }
 
         // 🛡️ PAST BOOKING PREVENTION
         if (!isAdmin) {

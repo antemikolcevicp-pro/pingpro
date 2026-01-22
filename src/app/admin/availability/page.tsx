@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { format, addDays, isSameDay, startOfDay, addMinutes, parseISO, isWithinInterval, differenceInMinutes } from "date-fns";
+import { format, addDays, isSameDay, startOfDay, addMinutes, parseISO, isWithinInterval, differenceInMinutes, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { hr } from "date-fns/locale";
 import PendingBookingsBar from "@/components/PendingBookingsBar";
 import {
@@ -18,7 +18,9 @@ import {
     User,
     PlusCircle,
     X,
-    Check
+    Check,
+    LayoutGrid,
+    CalendarDays
 } from "lucide-react";
 
 // --- CONFIG ---
@@ -38,24 +40,35 @@ export default function UnifiedCalendar() {
     const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'COACH';
 
     // UI states
+    const [viewMode, setViewMode] = useState<'DAY' | 'WEEK'>('DAY');
     const [actionModal, setActionModal] = useState<{ time: string, date: Date } | null>(null);
     const [actionType, setActionType] = useState<'BLOCK' | 'BOOK' | null>(null);
     const [form, setForm] = useState({
         duration: 90,
         notes: "",
-        playerName: ""
+        playerName: "",
+        isAllDay: false,
+        recurrence: 'NONE' as 'NONE' | 'WEEKLY'
     });
 
     const days = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i));
 
     useEffect(() => {
-        fetchDayData();
-    }, [selectedDate]);
+        fetchData();
+    }, [selectedDate, viewMode]);
 
-    const fetchDayData = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/admin/blocks?date=${selectedDate.toISOString()}`);
+            let res;
+            if (viewMode === 'DAY') {
+                res = await fetch(`/api/admin/blocks?date=${selectedDate.toISOString()}`);
+            } else {
+                const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
+                const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
+                res = await fetch(`/api/admin/blocks?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+            }
+
             if (res.ok) {
                 const data = await res.json();
                 setActivities(data);
@@ -80,6 +93,8 @@ export default function UnifiedCalendar() {
                 startTime: startStr,
                 endTime: endStr,
                 notes: actionType === 'BLOCK' ? form.notes : `Rezervacija: ${form.playerName || session?.user?.name}`,
+                isAllDay: form.isAllDay,
+                recurrence: form.recurrence
             };
 
             if (actionType === 'BOOK') {
@@ -97,7 +112,7 @@ export default function UnifiedCalendar() {
 
             if (res.ok) {
                 closeModal();
-                fetchDayData();
+                fetchData();
             } else {
                 const err = await res.text();
                 alert(err || "Pogreška");
@@ -113,7 +128,7 @@ export default function UnifiedCalendar() {
         if (!confirm("Sigurno želite izbrisati ovaj termin?")) return;
         try {
             const res = await fetch(`/api/admin/blocks?id=${id}`, { method: "DELETE" });
-            if (res.ok) fetchDayData();
+            if (res.ok) fetchData();
         } catch (error) {
             alert("Greška.");
         }
@@ -127,7 +142,7 @@ export default function UnifiedCalendar() {
                 body: JSON.stringify({ bookingId, action })
             });
 
-            if (res.ok) fetchDayData();
+            if (res.ok) fetchData();
         } catch (error) {
             alert("Greška pri obradi.");
         }
@@ -136,7 +151,7 @@ export default function UnifiedCalendar() {
     const closeModal = () => {
         setActionModal(null);
         setActionType(null);
-        setForm({ duration: 90, notes: "", playerName: "" });
+        setForm({ duration: 90, notes: "", playerName: "", isAllDay: false, recurrence: 'NONE' });
     };
 
     const generateTimeline = () => {
@@ -175,101 +190,173 @@ export default function UnifiedCalendar() {
                     <h1>PingPro Kalendar 🏓</h1>
                     <p>{isAdmin ? "Upravljaj dvoranom i rezervacijama." : "Odaberi termin za svoj trening."}</p>
                 </div>
+                {isAdmin && (
+                    <div className="view-toggle glass">
+                        <button className={viewMode === 'DAY' ? 'active' : ''} onClick={() => setViewMode('DAY')}>
+                            <CalendarIcon size={18} /> <span>Dan</span>
+                        </button>
+                        <button className={viewMode === 'WEEK' ? 'active' : ''} onClick={() => setViewMode('WEEK')}>
+                            <LayoutGrid size={18} /> <span>Tjedan</span>
+                        </button>
+                    </div>
+                )}
             </header>
 
-            {/* DATE STRIP */}
+            {/* DATE/WEEK NAV */}
             <div className="date-strip glass">
-                <button className="nav-btn" onClick={() => setSelectedDate(addDays(selectedDate, -1))}><ChevronLeft size={20} /></button>
+                <button className="nav-btn" onClick={() => setSelectedDate(addDays(selectedDate, viewMode === 'DAY' ? -1 : -7))}><ChevronLeft size={20} /></button>
                 <div className="scroll-area">
-                    {days.map((day) => {
-                        const isSelected = isSameDay(day, selectedDate);
-                        return (
-                            <button
-                                key={day.toString()}
-                                className={`date-card ${isSelected ? 'active' : ''}`}
-                                onClick={() => setSelectedDate(day)}
-                            >
-                                <span className="day-text">{format(day, "EEE", { locale: hr })}</span>
-                                <span className="num-text">{format(day, "d.M.")}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-                <button className="nav-btn" onClick={() => setSelectedDate(addDays(selectedDate, 1))}><ChevronRight size={20} /></button>
-            </div>
-
-            {/* TIMELINE */}
-            <div className="timeline-container card glass">
-                <div className="timeline-header">
-                    <CalendarIcon size={18} color="var(--primary)" />
-                    <h3>{format(selectedDate, "EEEE, d. MMMM", { locale: hr })}</h3>
-                </div>
-
-                <div className="timeline-grid">
-                    {loading ? (
-                        <div className="loader"><Loader2 className="animate-spin" size={32} /></div>
-                    ) : (
-                        timeline.map((slot, idx) => {
-                            const isNewActivity = idx === 0 || (slot.activity && timeline[idx - 1].activity?.id !== slot.activity.id);
-
-                            let slotsCount = 1;
-                            if (slot.activity && isNewActivity) {
-                                const duration = differenceInMinutes(parseISO(slot.activity.endDateTime), parseISO(slot.activity.startDateTime));
-                                slotsCount = Math.ceil(duration / SLOT_STEP);
-                            }
-
+                    {viewMode === 'DAY' ? (
+                        days.map((day) => {
+                            const isSelected = isSameDay(day, selectedDate);
                             return (
-                                <div key={idx} className={`slot-row ${slot.activity ? 'occupied' : 'free'}`}>
-                                    <div className="time-col">{slot.time}</div>
-                                    <div className="action-col">
-                                        {slot.activity ? (
-                                            isNewActivity ? (
-                                                <div
-                                                    className={`activity-block ${slot.activity.status}`}
-                                                    style={{ height: `${slotsCount * 60 - 8}px`, zIndex: 20 }}
-                                                >
-                                                    <div className="activity-info">
-                                                        <span className="type-badge">
-                                                            {slot.activity.status === 'BLOCKED' ? <Lock size={12} /> : <User size={12} />}
-                                                            {slot.activity.status === 'BLOCKED' ? 'ZAUZETO' : slot.activity.status === 'PENDING' ? 'NA ČEKANJU' : 'RESERVIRANO'}
-                                                        </span>
-                                                        <span className="title">{slot.activity.notes || slot.activity.user?.name || "Termin"}</span>
-                                                        <span className="time-range">{format(parseISO(slot.activity.startDateTime), "HH:mm")} - {format(parseISO(slot.activity.endDateTime), "HH:mm")}</span>
-                                                    </div>
-                                                    <div className="activity-actions">
-                                                        {slot.activity.status === 'PENDING' && isAdmin && (
-                                                            <>
-                                                                <button className="confirm-btn-inline" onClick={() => handleQuickAction(slot.activity.id, 'CONFIRM')}>
-                                                                    <Check size={16} />
-                                                                </button>
-                                                                <button className="cancel-btn-inline" onClick={() => handleQuickAction(slot.activity.id, 'CANCEL')}>
-                                                                    <X size={16} />
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                        {isAdmin && slot.activity.status !== 'PENDING' && (
-                                                            <button className="delete-btn" onClick={() => handleDelete(slot.activity.id)}>
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ) : null
-                                        ) : (
-                                            <button
-                                                className="add-activity-btn"
-                                                onClick={() => setActionModal({ time: slot.time, date: slot.date })}
-                                            >
-                                                <PlusCircle size={18} className="icon" />
-                                                <span>Slobodno - Klikni za akciju</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                <button
+                                    key={day.toString()}
+                                    className={`date-card ${isSelected ? 'active' : ''}`}
+                                    onClick={() => setSelectedDate(day)}
+                                >
+                                    <span className="day-text">{format(day, "EEE", { locale: hr })}</span>
+                                    <span className="num-text">{format(day, "d.M.")}</span>
+                                </button>
                             );
                         })
+                    ) : (
+                        <div className="week-label">
+                            Tjedan od {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "d. MMMM", { locale: hr })}
+                        </div>
                     )}
                 </div>
+                <button className="nav-btn" onClick={() => setSelectedDate(addDays(selectedDate, viewMode === 'DAY' ? 1 : 7))}><ChevronRight size={20} /></button>
+            </div>
+
+            {/* TIMELINE / GRID */}
+            <div className="timeline-container card glass">
+                {viewMode === 'DAY' ? (
+                    <>
+                        <div className="timeline-header">
+                            <CalendarIcon size={18} color="var(--primary)" />
+                            <h3>{format(selectedDate, "EEEE, d. MMMM", { locale: hr })}</h3>
+                        </div>
+
+                        <div className="timeline-grid">
+                            {loading ? (
+                                <div className="loader"><Loader2 className="animate-spin" size={32} /></div>
+                            ) : (
+                                timeline.map((slot, idx) => {
+                                    const isNewActivity = idx === 0 || (slot.activity && timeline[idx - 1].activity?.id !== slot.activity.id);
+
+                                    let slotsCount = 1;
+                                    if (slot.activity && isNewActivity) {
+                                        const duration = differenceInMinutes(parseISO(slot.activity.endDateTime), parseISO(slot.activity.startDateTime));
+                                        slotsCount = Math.ceil(duration / SLOT_STEP);
+                                    }
+
+                                    return (
+                                        <div key={idx} className={`slot-row ${slot.activity ? 'occupied' : 'free'}`}>
+                                            <div className="time-col">{slot.time}</div>
+                                            <div className="action-col">
+                                                {slot.activity ? (
+                                                    isNewActivity ? (
+                                                        <div
+                                                            className={`activity-block ${slot.activity.status}`}
+                                                            style={{ height: `${slotsCount * 60 - 8}px`, zIndex: 20 }}
+                                                        >
+                                                            <div className="activity-info">
+                                                                <span className="type-badge">
+                                                                    {slot.activity.status === 'BLOCKED' ? <Lock size={12} /> : <User size={12} />}
+                                                                    {slot.activity.status === 'BLOCKED' ? 'ZAUZETO' : slot.activity.status === 'PENDING' ? 'NA ČEKANJU' : 'RESERVIRANO'}
+                                                                </span>
+                                                                <span className="title">{slot.activity.notes || slot.activity.user?.name || "Termin"}</span>
+                                                                <span className="time-range">{format(parseISO(slot.activity.startDateTime), "HH:mm")} - {format(parseISO(slot.activity.endDateTime), "HH:mm")}</span>
+                                                            </div>
+                                                            <div className="activity-actions">
+                                                                {slot.activity.status === 'PENDING' && isAdmin && (
+                                                                    <>
+                                                                        <button className="confirm-btn-inline" onClick={() => handleQuickAction(slot.activity.id, 'CONFIRM')}>
+                                                                            <Check size={16} />
+                                                                        </button>
+                                                                        <button className="cancel-btn-inline" onClick={() => handleQuickAction(slot.activity.id, 'CANCEL')}>
+                                                                            <X size={16} />
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                                {isAdmin && slot.activity.status !== 'PENDING' && (
+                                                                    <button className="delete-btn" onClick={() => handleDelete(slot.activity.id)}>
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ) : null
+                                                ) : (
+                                                    <button
+                                                        className="add-activity-btn"
+                                                        onClick={() => setActionModal({ time: slot.time, date: slot.date })}
+                                                    >
+                                                        <PlusCircle size={18} className="icon" />
+                                                        <span>Slobodno - Klikni za akciju</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="week-grid">
+                        <div className="grid-header">
+                            <div className="time-col-spacer"></div>
+                            {eachDayOfInterval({
+                                start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
+                                end: endOfWeek(selectedDate, { weekStartsOn: 1 })
+                            }).map(day => (
+                                <div key={day.toString()} className={`day-col-header ${isSameDay(day, new Date()) ? 'today' : ''}`}>
+                                    <span className="day-name">{format(day, "EEE", { locale: hr })}</span>
+                                    <span className="day-num">{format(day, "d.M.")}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid-body">
+                            {Array.from({ length: DEFAULT_END_HOUR - DEFAULT_START_HOUR }, (_, i) => {
+                                const hour = DEFAULT_START_HOUR + i;
+                                return (
+                                    <div key={hour} className="hour-row">
+                                        <div className="time-col">{hour}:00</div>
+                                        {eachDayOfInterval({
+                                            start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
+                                            end: endOfWeek(selectedDate, { weekStartsOn: 1 })
+                                        }).map(day => {
+                                            const current = new Date(day);
+                                            current.setHours(hour, 0, 0, 0);
+                                            const activity = activities.find(b => {
+                                                const bStart = parseISO(b.startDateTime);
+                                                const bEnd = parseISO(b.endDateTime);
+                                                return isWithinInterval(current, { start: bStart, end: addMinutes(bEnd, -1) });
+                                            });
+
+                                            return (
+                                                <div
+                                                    key={day.toString()}
+                                                    className={`day-cell ${activity ? 'occupied' : 'free'}`}
+                                                    onClick={() => !activity && setActionModal({ time: `${hour}:00`, date: day })}
+                                                >
+                                                    {activity && (
+                                                        <div className={`week-activity ${activity.status}`}>
+                                                            {activity.status === 'BLOCKED' ? <Lock size={10} /> : <User size={10} />}
+                                                            <span>{activity.notes || activity.user?.name || "Termin"}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* MODAL */}
@@ -297,15 +384,43 @@ export default function UnifiedCalendar() {
                             </div>
                         ) : (
                             <div className="modal-body">
-                                <div className="form-group">
-                                    <label>Trajanje (minuta)</label>
-                                    <select value={form.duration} onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) })}>
-                                        <option value={30}>30 min</option>
-                                        <option value={60}>60 min (1h)</option>
-                                        <option value={90}>90 min (1.5h)</option>
-                                        <option value={120}>120 min (2h)</option>
-                                    </select>
-                                </div>
+                                {actionType === 'BLOCK' && (
+                                    <div className="form-group-row">
+                                        <div className="form-group flex-1">
+                                            <label className="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.isAllDay}
+                                                    onChange={(e) => setForm({ ...form, isAllDay: e.target.checked })}
+                                                />
+                                                Cijeli dan
+                                            </label>
+                                        </div>
+                                        <div className="form-group flex-1">
+                                            <label>Ponavljanje</label>
+                                            <select
+                                                value={form.recurrence}
+                                                onChange={(e) => setForm({ ...form, recurrence: e.target.value as any })}
+                                            >
+                                                <option value="NONE">Bez ponavljanja</option>
+                                                <option value="WEEKLY">Svaki tjedan (4 tjedna)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!form.isAllDay && (
+                                    <div className="form-group">
+                                        <label>Trajanje (minuta)</label>
+                                        <select value={form.duration} onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) })}>
+                                            <option value={30}>30 min</option>
+                                            <option value={60}>60 min (1h)</option>
+                                            <option value={90}>90 min (1.5h)</option>
+                                            <option value={120}>120 min (2h)</option>
+                                            <option value={180}>180 min (3h)</option>
+                                        </select>
+                                    </div>
+                                )}
 
                                 {isAdmin && actionType === 'BLOCK' && (
                                     <div className="form-group">
@@ -445,6 +560,50 @@ export default function UnifiedCalendar() {
 
                 .loader { display: flex; align-items: center; justify-content: center; padding: 5rem; color: var(--primary); }
 
+                /* View Toggle */
+                .view-toggle { display: flex; padding: 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+                .view-toggle button { 
+                    display: flex; align-items: center; gap: 8px; padding: 6px 12px; 
+                    border: none; background: none; color: var(--text-muted); cursor: pointer;
+                    border-radius: 8px; transition: 0.3s; font-weight: 700; font-size: 0.8rem;
+                }
+                .view-toggle button.active { background: var(--primary); color: #fff; }
+
+                .week-label { display: flex; align-items: center; justify-content: center; flex: 1; font-weight: 800; font-size: 1.1rem; color: #fff; }
+
+                /* Week Grid Styles */
+                .week-grid { display: flex; flex-direction: column; overflow: hidden; background: rgba(0,0,0,0.1); }
+                .grid-header { display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); }
+                .time-col-spacer { width: 60px; border-right: 1px solid rgba(255,255,255,0.05); }
+                .day-col-header { flex: 1; padding: 1rem; display: flex; flex-direction: column; align-items: center; border-right: 1px solid rgba(255,255,255,0.05); }
+                .day-col-header.today { background: rgba(227, 6, 19, 0.05); }
+                .day-col-header.today .day-num { color: var(--primary); }
+                .day-name { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: var(--text-muted); }
+                .day-num { font-size: 1rem; font-weight: 800; }
+
+                .grid-body { max-height: 600px; overflow-y: auto; }
+                .hour-row { display: flex; border-bottom: 1px solid rgba(255,255,255,0.03); height: 50px; }
+                .hour-row .time-col { 
+                    width: 60px; font-size: 0.75rem; color: var(--text-muted); 
+                    display: flex; align-items: center; justify-content: center;
+                    border-right: 1px solid rgba(255,255,255,0.05);
+                }
+                .day-cell { flex: 1; border-right: 1px solid rgba(255,255,255,0.03); cursor: pointer; position: relative; }
+                .day-cell:hover { background: rgba(255,255,255,0.02); }
+                .day-cell.occupied { background: rgba(255,255,255,0.03); cursor: default; }
+                
+                .week-activity { 
+                    position: absolute; inset: 2px; border-radius: 4px; padding: 4px;
+                    display: flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 700;
+                    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                }
+                .week-activity.BLOCKED { background: rgba(227, 6, 19, 0.2); border-left: 2px solid var(--primary); color: var(--primary); }
+                .week-activity.CONFIRMED { background: rgba(0, 150, 255, 0.2); border-left: 2px solid #0096ff; color: #0096ff; }
+                .week-activity.PENDING { background: rgba(255, 255, 255, 0.1); border-left: 2px solid #fff; color: #fff; }
+
+                .form-group-row { display: flex; gap: 15px; align-items: flex-end; }
+                .checkbox-label { display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; }
+
                 @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
                 .animate-spin { animation: spin 1s linear infinite; }
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -452,6 +611,8 @@ export default function UnifiedCalendar() {
                 @media (max-width: 600px) {
                     .slot-row { min-height: 80px; }
                     .action-selector { grid-template-columns: 1fr; }
+                    .week-grid { overflow-x: auto; }
+                    .grid-header, .hour-row { width: 1000px; }
                 }
             `}</style>
         </div>
