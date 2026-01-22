@@ -66,3 +66,51 @@ export async function POST(req: Request) {
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }
+
+export async function DELETE(req: Request) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return new NextResponse("ID required", { status: 400 });
+
+    try {
+        const booking = await prisma.booking.findUnique({
+            where: { id },
+            include: { user: true }
+        });
+
+        if (!booking) return new NextResponse("Booking not found", { status: 404 });
+
+        // @ts-ignore
+        const isOwner = booking.userId === session.user.id;
+        // @ts-ignore
+        const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'COACH';
+
+        if (!isOwner && !isAdmin) {
+            return new NextResponse("Forbidden", { status: 403 });
+        }
+
+        // 🛡️ 4-HOUR RULE FOR USERS
+        if (!isAdmin) {
+            const now = new Date();
+            const start = new Date(booking.startDateTime);
+            const diffMs = start.getTime() - now.getTime();
+            const diffHours = diffMs / (1000 * 60 * 60);
+
+            if (diffHours < 4) {
+                return new NextResponse("Termin se može otkazati najkasnije 4 sata prije početka.", { status: 400 });
+            }
+        }
+
+        // Actually delete or cancel? User said "ukloni rezervaciju", usually means delete for blocks or cancel for sessions
+        // Let's go with delete for simplicity as requested "ukloni"
+        await prisma.booking.delete({ where: { id } });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting booking:", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
+    }
+}
