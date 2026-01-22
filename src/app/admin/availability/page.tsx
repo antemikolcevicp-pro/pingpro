@@ -346,9 +346,18 @@ export default function UnifiedCalendar() {
                                                     onClick={() => !activity && setActionModal({ time: `${hour}:00`, date: day })}
                                                 >
                                                     {activity && (
-                                                        <div className={`week-activity ${activity.status}`}>
-                                                            {activity.status === 'BLOCKED' ? <Lock size={10} /> : <User size={10} />}
-                                                            <span>{activity.notes || activity.user?.name || "Termin"}</span>
+                                                        <div className={`week-activity ${activity.status} ${activity.notes?.startsWith('SOKAZ') ? 'SOKAZ' : ''}`}>
+                                                            <div className="activity-main">
+                                                                {activity.status === 'BLOCKED' ? <Lock size={10} /> : <User size={10} />}
+                                                                <span>{activity.notes || activity.user?.name || "Termin"}</span>
+                                                            </div>
+                                                            <button
+                                                                className="week-delete-btn"
+                                                                onClick={(e) => { e.stopPropagation(); handleDelete(activity.id); }}
+                                                                title="Obriši"
+                                                            >
+                                                                <X size={10} />
+                                                            </button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -597,12 +606,25 @@ export default function UnifiedCalendar() {
                 
                 .week-activity { 
                     position: absolute; inset: 2px; border-radius: 4px; padding: 4px;
-                    display: flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 700;
-                    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                    display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 0.65rem; font-weight: 700;
+                    overflow: hidden;
                 }
+                .activity-main { display: flex; align-items: center; gap: 4px; flex: 1; overflow: hidden; }
+                .activity-main span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
                 .week-activity.BLOCKED { background: rgba(227, 6, 19, 0.2); border-left: 2px solid var(--primary); color: var(--primary); }
                 .week-activity.CONFIRMED { background: rgba(0, 150, 255, 0.2); border-left: 2px solid #0096ff; color: #0096ff; }
                 .week-activity.PENDING { background: rgba(255, 255, 255, 0.1); border-left: 2px solid #fff; color: #fff; }
+                .week-activity.SOKAZ { background: rgba(255, 165, 0, 0.2); border-left: 2px solid #ffa500; color: #ffa500; }
+
+                .week-delete-btn { 
+                    background: rgba(255,255,255,0.1); border: none; color: #fff; 
+                    width: 16px; height: 16px; border-radius: 4px; 
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; opacity: 0; transition: 0.2s;
+                }
+                .week-activity:hover .week-delete-btn { opacity: 1; }
+                .week-delete-btn:hover { background: #ff4444; }
 
                 .form-group-row { display: flex; gap: 15px; align-items: flex-end; }
                 .checkbox-label { display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; }
@@ -612,10 +634,20 @@ export default function UnifiedCalendar() {
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
                 @media (max-width: 600px) {
+                    .calendar-page { padding: 1rem 0; }
+                    .page-header h1 { font-size: 1.6rem; }
+                    .page-header p { font-size: 0.8rem; }
+                    .view-toggle button { padding: 6px 8px; font-size: 0.7rem; }
+                    .view-toggle button span { display: none; }
+                    
                     .slot-row { min-height: 80px; }
                     .action-selector { grid-template-columns: 1fr; }
                     .week-grid { overflow-x: auto; }
-                    .grid-header, .hour-row { width: 1000px; }
+                    .grid-header, .hour-row { width: 850px; }
+                    
+                    .modal-content { padding: 1.5rem; }
+                    .modal-header h2 { font-size: 1.4rem; }
+                    .action-selector { gap: 1rem; }
                 }
             `}</style>
         </div>

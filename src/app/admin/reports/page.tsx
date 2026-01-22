@@ -171,7 +171,17 @@ export default function CoachStatsPage() {
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
                 @media (max-width: 800px) {
+                    .stats-header h1 { font-size: 1.8rem; }
+                    .month-nav { padding: 0.75rem 1rem; }
+                    .current-month h2 { font-size: 1.2rem; }
+                    .stat-card { padding: 1.25rem; }
+                    .stat-info .value { font-size: 1.5rem; }
+                    
+                    .report-table th, .report-table td { padding: 1rem; font-size: 0.9rem; }
                     .report-table th:nth-child(4), .report-table td:nth-child(4) { display: none; }
+                }
+                @media (max-width: 500px) {
+                    .report-table th:nth-child(2), .report-table td:nth-child(2) { display: none; }
                 }
             `}</style>
         </div>

@@ -274,7 +274,7 @@ export default function BookingCalendar() {
                                         {slot.activity ? (
                                             isNewActivity ? (
                                                 <div
-                                                    className={`activity-block ${slot.activity.status} ${isMine ? 'mine' : ''}`}
+                                                    className={`activity-block ${slot.activity.status} ${isMine ? 'mine' : ''} ${slot.activity.notes?.startsWith('SOKAZ') ? 'sokaz-theme' : ''}`}
                                                     style={{ height: `${slotsCount * 60 - 8}px`, zIndex: 20 }}
                                                 >
                                                     <div className="activity-info">
@@ -459,6 +459,7 @@ export default function BookingCalendar() {
                 .activity-block.CONFIRMED { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid var(--border); }
                 .activity-block.PENDING { background: rgba(255, 255, 255, 0.05); border: 1px dotted rgba(255, 255, 255, 0.2); border-left: 4px solid #fff; }
                 .activity-block.mine { background: linear-gradient(to right, rgba(0, 75, 147, 0.25), rgba(0, 75, 147, 0.1)); border: 1px solid var(--secondary); border-left: 4px solid var(--secondary); }
+                .activity-block.sokaz-theme { background: rgba(255, 165, 0, 0.15); border: 1px solid rgba(255, 165, 0, 0.3); border-left: 4px solid #ffa500; }
                 
                 .slot-row.past { opacity: 0.4; pointer-events: none; filter: grayscale(0.8); }
 
@@ -512,7 +513,31 @@ export default function BookingCalendar() {
 
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 .animate-spin { animation: spin 1s linear infinite; }
-                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                @media (max-width: 600px) {
+                    .booking-timeline { padding: 0.5rem 0; }
+                    .resource-selector { padding: 1rem; border-radius: 16px; margin-bottom: 1rem; }
+                    .date-strip { padding: 0.5rem; margin-bottom: 1rem; }
+                    .date-card { flex: 0 0 60px; padding: 0.5rem; }
+                    
+                    .timeline-header { padding: 1rem; }
+                    .timeline-header h3 { font-size: 0.95rem; }
+                    
+                    .slot-row { height: auto; min-height: 65px; }
+                    .time-col { width: 60px; font-size: 0.75rem; }
+                    .action-col { padding: 10px; }
+                    
+                    .activity-block { padding: 8px 12px; }
+                    .activity-info .title { font-size: 0.85rem; }
+                    .activity-info .time-range { font-size: 0.7rem; }
+                    
+                    .booking-actions { flex-direction: column; gap: 6px; }
+                    .add-booking-btn { padding: 10px; min-height: 44px; }
+                    
+                    .modal-content { padding: 1.5rem; max-width: 100%; border-radius: 16px; }
+                    .modal-header h2 { font-size: 1.3rem; }
+                    .form-row { flex-direction: column; gap: 0; }
+                    .btn.full-width { height: 44px; font-size: 0.9rem; }
+                }
             `}</style>
         </div>
     );
