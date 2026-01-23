@@ -7,8 +7,9 @@ import { Role } from "@prisma/client";
 // GET - Get team details (members)
 export async function GET(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     // @ts-ignore
     const userRole = session?.user?.role;
@@ -18,7 +19,7 @@ export async function GET(
 
     try {
         const team = await prisma.team.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: {
                 members: {
                     select: {
@@ -42,8 +43,9 @@ export async function GET(
 // DELETE - Remove member from team
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params; // Not strictly used in logic below but required for signature matching
     const session = await getServerSession(authOptions);
     // @ts-ignore
     const userRole = session?.user?.role;

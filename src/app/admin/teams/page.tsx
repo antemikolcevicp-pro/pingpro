@@ -15,6 +15,11 @@ import {
 
 export default function AdminTeamsPage() {
     const { data: session } = useSession();
+    const [teams, setTeams] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [newTeamName, setNewTeamName] = useState("");
+    const [creating, setCreating] = useState(false);
     const [viewingTeam, setViewingTeam] = useState<any>(null);
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(false);
