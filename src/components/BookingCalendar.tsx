@@ -12,6 +12,7 @@ import {
     Lock,
     Loader2,
     User,
+    Users,
     X,
     Trash2,
     PlusCircle
@@ -33,7 +34,7 @@ export default function BookingCalendar() {
     const [selectedCoachId, setSelectedCoachId] = useState<string>("cmknufbbk0000pkog6tq6kowi"); // Ante Mikolčević default
 
     // Modal State
-    const [bookingType, setBookingType] = useState<'COACH' | 'SOKAZ'>('COACH');
+    const [bookingType, setBookingType] = useState<'COACH' | 'SOKAZ' | 'SOLO'>('COACH');
     const [bookingModal, setBookingModal] = useState<{ time: string, date: Date, maxDuration: number } | null>(null);
     const [form, setForm] = useState({
         duration: 60,
@@ -317,8 +318,19 @@ export default function BookingCalendar() {
                                                         setForm({ ...form, duration: Math.min(60, slot.maxDuration) });
                                                     }}
                                                 >
-                                                    <PlusCircle size={18} className="icon" />
+                                                    <Users size={18} className="icon" />
                                                     <span>Trening s trenerom</span>
+                                                </button>
+                                                <button
+                                                    className="add-booking-btn solo-btn"
+                                                    onClick={() => {
+                                                        setBookingType('SOLO');
+                                                        setBookingModal({ time: slot.time, date: slot.date, maxDuration: slot.maxDuration });
+                                                        setForm({ ...form, duration: Math.min(60, slot.maxDuration) });
+                                                    }}
+                                                >
+                                                    <User size={18} className="icon" />
+                                                    <span>Samostalni trening</span>
                                                 </button>
                                                 {slot.canSokaz && (
                                                     <button
@@ -350,7 +362,11 @@ export default function BookingCalendar() {
                         <div className="modal-header">
                             <div>
                                 <h2>Rezervacija Termina</h2>
-                                <p>{bookingType === 'COACH' ? 'Trening s trenerom' : 'Rezervacija dvorane (SOKAZ)'}</p>
+                                <p>
+                                    {bookingType === 'COACH' ? 'Trening s trenerom' :
+                                        bookingType === 'SOKAZ' ? 'Rezervacija dvorane (SOKAZ)' :
+                                            'Samostalni trening (Najam stola)'}
+                                </p>
                                 <p>{format(bookingModal.date, "dd.MM.")} u <strong className="highlight">{bookingModal.time}</strong>h</p>
                             </div>
                             <button className="close-btn" onClick={() => setBookingModal(null)}><X /></button>
@@ -358,7 +374,7 @@ export default function BookingCalendar() {
 
                         <div className="modal-body">
                             <div className="form-row">
-                                {bookingType === 'COACH' && (
+                                {(bookingType === 'COACH' || bookingType === 'SOLO') && (
                                     <div className="form-group flex-1">
                                         <label>Trajanje</label>
                                         <select
@@ -373,7 +389,7 @@ export default function BookingCalendar() {
                                     </div>
                                 )}
 
-                                {bookingType === 'COACH' && (
+                                {(bookingType === 'COACH' || bookingType === 'SOLO') && (
                                     <div className="form-group flex-1">
                                         <label>Broj osoba</label>
                                         <input
@@ -481,6 +497,8 @@ export default function BookingCalendar() {
                 }
                 .add-booking-btn:hover { background: rgba(227, 6, 19, 0.03); border-color: var(--primary); color: var(--primary); }
                 .add-booking-btn .icon { opacity: 0.3; }
+                .solo-btn { border-color: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.6); }
+                .solo-btn:hover { background: rgba(255, 255, 255, 0.05); border-color: #fff; color: #fff; }
                 .sokaz-btn { border-style: solid; border-color: rgba(0, 150, 255, 0.2); color: rgba(0, 150, 255, 0.6); }
                 .sokaz-btn:hover { background: rgba(0, 150, 255, 0.05); border-color: #0096ff; color: #0096ff; }
 
