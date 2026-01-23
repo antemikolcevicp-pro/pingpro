@@ -100,7 +100,7 @@ export default function BookingCalendar() {
                     startTime: startStr,
                     duration: form.duration,
                     notes: form.notes,
-                    coachId: bookingType === 'COACH' ? selectedCoachId : null,
+                    coachId: selectedCoachId || null,
                     locationId: "bakarić",
                     isSokaz: bookingType === 'SOKAZ',
                     participantCount: form.participantCount,
@@ -212,6 +212,7 @@ export default function BookingCalendar() {
                             value={selectedCoachId}
                             onChange={(e) => setSelectedCoachId(e.target.value)}
                         >
+                            <option value="">Bez trenera (Samostalni trening)</option>
                             {coaches.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
@@ -318,19 +319,8 @@ export default function BookingCalendar() {
                                                         setForm({ ...form, duration: Math.min(60, slot.maxDuration) });
                                                     }}
                                                 >
-                                                    <Users size={18} className="icon" />
-                                                    <span>Trening s trenerom</span>
-                                                </button>
-                                                <button
-                                                    className="add-booking-btn solo-btn"
-                                                    onClick={() => {
-                                                        setBookingType('SOLO');
-                                                        setBookingModal({ time: slot.time, date: slot.date, maxDuration: slot.maxDuration });
-                                                        setForm({ ...form, duration: Math.min(60, slot.maxDuration) });
-                                                    }}
-                                                >
-                                                    <User size={18} className="icon" />
-                                                    <span>Samostalni trening</span>
+                                                    <PlusCircle size={18} className="icon" />
+                                                    <span>{selectedCoachId ? 'Rezerviraj termin' : 'Rezerviraj samostalni trening'}</span>
                                                 </button>
                                                 {slot.canSokaz && (
                                                     <button

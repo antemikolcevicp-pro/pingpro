@@ -241,7 +241,7 @@ export default function Dashboard() {
                                         <div>
                                             <h4 style={{ fontSize: '1.1rem', marginBottom: '0.4rem' }}>
                                                 {/* @ts-ignore */}
-                                                {(session?.user?.role === 'COACH' || session?.user?.role === 'ADMIN') ? `Trening s: ${b.user.name}` : `Trening s trenerom: ${b.coach.name}`}
+                                                {(session?.user?.role === 'COACH' || session?.user?.role === 'ADMIN') ? `Trening s: ${b.user?.name || 'Nepoznato'}` : (b.coach ? `Trening s trenerom: ${b.coach.name}` : 'Samostalni trening')}
                                             </h4>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
