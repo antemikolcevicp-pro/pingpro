@@ -13,13 +13,16 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { startTime, coachId, duration, notes, participantCount, tableCount, locationId, isSokaz } = await req.json();
+        const { startTime, coachId, duration, notes, participantCount, tableCount, locationId, isSokaz, targetUserId } = await req.json();
         const slotDuration = duration || 90;
 
         // @ts-ignore
-        const userId = session.user.id;
+        const currentUserId = session.user.id;
         // @ts-ignore
         const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'COACH';
+
+        // Use targetUserId if provided by admin, otherwise use current user
+        const userId = (isAdmin && targetUserId) ? targetUserId : currentUserId;
 
         const startObj = parseISO(startTime);
 

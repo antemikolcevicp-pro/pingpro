@@ -1,13 +1,32 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { User, LogOut, Calendar, Users, Settings, TrendingUp } from "lucide-react";
+import { User, LogOut, Calendar, Users, Settings, TrendingUp, Bell } from "lucide-react";
 
 export default function Navigation() {
     const { data: session } = useSession();
+    const [pendingCount, setPendingCount] = useState(0);
     // @ts-ignore
     const isCoachOrAdmin = session?.user?.role === 'COACH' || session?.user?.role === 'ADMIN';
+
+    useEffect(() => {
+        if (isCoachOrAdmin) {
+            const fetchPending = async () => {
+                try {
+                    const res = await fetch('/api/admin/pending-bookings');
+                    if (res.ok) {
+                        const data = await res.json();
+                        setPendingCount(data.length);
+                    }
+                } catch (e) { }
+            };
+            fetchPending();
+            const interval = setInterval(fetchPending, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [isCoachOrAdmin]);
 
     return (
         <nav className="glass" style={{
@@ -55,6 +74,31 @@ export default function Navigation() {
                                 </>
                             )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '0.5rem', borderLeft: '1px solid var(--border)', paddingLeft: '0.75rem' }}>
+                                {isCoachOrAdmin && (
+                                    <Link href="/admin/availability" style={{ position: 'relative', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }} title="Obavijesti">
+                                        <Bell size={20} />
+                                        {pendingCount > 0 && (
+                                            <span style={{
+                                                position: 'absolute',
+                                                top: '-5px',
+                                                right: '-5px',
+                                                background: 'var(--primary)',
+                                                color: '#fff',
+                                                borderRadius: '50%',
+                                                width: '18px',
+                                                height: '18px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '0.65rem',
+                                                fontWeight: 800,
+                                                border: '2px solid #000'
+                                            }}>
+                                                {pendingCount}
+                                            </span>
+                                        )}
+                                    </Link>
+                                )}
                                 <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} className="user-profile-link">
                                     {session.user?.image && (
                                         <img

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { bookingId, action } = await req.json();
+        const { bookingId, action, coachId } = await req.json();
 
         if (!bookingId || !action) {
             return new NextResponse("Missing data", { status: 400 });
@@ -21,9 +21,14 @@ export async function POST(req: Request) {
 
         const status = action === 'CONFIRM' ? 'CONFIRMED' : 'CANCELLED';
 
+        const updateData: any = { status };
+        if (action === 'CONFIRM' && coachId !== undefined) {
+            updateData.coachId = coachId;
+        }
+
         const updated = await prisma.booking.update({
             where: { id: bookingId },
-            data: { status },
+            data: updateData,
             include: { user: true }
         });
 

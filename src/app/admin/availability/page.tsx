@@ -42,11 +42,15 @@ export default function UnifiedCalendar() {
     // UI states
     const [viewMode, setViewMode] = useState<'DAY' | 'WEEK'>('DAY');
     const [actionModal, setActionModal] = useState<{ time: string, date: Date } | null>(null);
-    const [actionType, setActionType] = useState<'BLOCK' | 'BOOK' | null>(null);
+    const [selectedBooking, setSelectedBooking] = useState<any>(null);
+    const [actionType, setActionType] = useState<'BLOCK' | 'BOOK' | 'CONFIRM' | null>(null);
+    const [users, setUsers] = useState<any[]>([]);
     const [form, setForm] = useState({
         duration: 90,
         notes: "",
         playerName: "",
+        selectedUserId: "",
+        isWithCoach: true,
         isAllDay: false,
         recurrence: 'NONE' as 'NONE' | 'WEEKLY'
     });
@@ -55,7 +59,18 @@ export default function UnifiedCalendar() {
 
     useEffect(() => {
         fetchData();
+        fetchUsers();
     }, [selectedDate, viewMode]);
+
+    const fetchUsers = async () => {
+        try {
+            const res = await fetch('/api/admin/users');
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            }
+        } catch (e) { }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -101,10 +116,19 @@ export default function UnifiedCalendar() {
             };
 
             if (actionType === 'BOOK') {
-                // For booking, we need coachId. Defaulting to first admin/coach found in prev steps or session.
+                if (form.selectedUserId) {
+                    body.targetUserId = form.selectedUserId;
+                }
                 // @ts-ignore
-                body.coachId = session?.user?.id;
+                body.coachId = form.isWithCoach ? session?.user?.id : null;
                 body.duration = form.duration;
+                if (!form.selectedUserId && form.playerName) {
+                    body.notes = `Manualna rezervacija: ${form.playerName}${form.notes ? ' - ' + form.notes : ''}`;
+                } else if (form.notes) {
+                    body.notes = form.notes;
+                } else {
+                    body.notes = form.isWithCoach ? "Trening s trenerom" : "Samostalni trening";
+                }
             }
 
             const res = await fetch(endpoint, {
@@ -127,6 +151,34 @@ export default function UnifiedCalendar() {
         }
     };
 
+    const handleConfirmPending = async () => {
+        if (!selectedBooking) return;
+        setSaving(true);
+        try {
+            const res = await fetch("/api/admin/confirm-booking", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    bookingId: selectedBooking.id,
+                    action: 'CONFIRM',
+                    // @ts-ignore
+                    coachId: form.isWithCoach ? session?.user?.id : null
+                })
+            });
+
+            if (res.ok) {
+                closeModal();
+                fetchData();
+            } else {
+                alert("Greška pri potvrdi.");
+            }
+        } catch (error) {
+            alert("Greška.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm("Sigurno želite izbrisati ovaj termin?")) return;
         try {
@@ -137,12 +189,21 @@ export default function UnifiedCalendar() {
         }
     };
 
-    const handleQuickAction = async (bookingId: string, action: 'CONFIRM' | 'CANCEL') => {
+    const handleQuickAction = async (activity: any, action: 'CONFIRM' | 'CANCEL') => {
+        if (action === 'CONFIRM') {
+            setSelectedBooking(activity);
+            setActionType('CONFIRM');
+            setForm({ ...form, isWithCoach: !!activity.coachId });
+            return;
+        }
+
+        if (!confirm("Sigurno želite otkazati ovaj termin?")) return;
+
         try {
             const res = await fetch("/api/admin/confirm-booking", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ bookingId, action })
+                body: JSON.stringify({ bookingId: activity.id, action })
             });
 
             if (res.ok) fetchData();
@@ -154,7 +215,8 @@ export default function UnifiedCalendar() {
     const closeModal = () => {
         setActionModal(null);
         setActionType(null);
-        setForm({ duration: 90, notes: "", playerName: "", isAllDay: false, recurrence: 'NONE' });
+        setSelectedBooking(null);
+        setForm({ duration: 90, notes: "", playerName: "", selectedUserId: "", isWithCoach: true, isAllDay: false, recurrence: 'NONE' });
     };
 
     const generateTimeline = () => {
@@ -275,10 +337,10 @@ export default function UnifiedCalendar() {
                                                             <div className="activity-actions">
                                                                 {slot.activity.status === 'PENDING' && isAdmin && (
                                                                     <>
-                                                                        <button className="confirm-btn-inline" onClick={() => handleQuickAction(slot.activity.id, 'CONFIRM')}>
+                                                                        <button className="confirm-btn-inline" onClick={() => handleQuickAction(slot.activity, 'CONFIRM')}>
                                                                             <Check size={16} />
                                                                         </button>
-                                                                        <button className="cancel-btn-inline" onClick={() => handleQuickAction(slot.activity.id, 'CANCEL')}>
+                                                                        <button className="cancel-btn-inline" onClick={() => handleQuickAction(slot.activity, 'CANCEL')}>
                                                                             <X size={16} />
                                                                         </button>
                                                                     </>
@@ -372,18 +434,57 @@ export default function UnifiedCalendar() {
             </div>
 
             {/* MODAL */}
-            {actionModal && (
+            {(actionModal || selectedBooking) && (
                 <div className="modal-overlay">
                     <div className="modal-content glass card">
                         <div className="modal-header">
                             <div>
-                                <h2>Novi Termin</h2>
-                                <p>{format(actionModal.date, "dd.MM.")} u <strong className="highlight">{actionModal.time}</strong>h</p>
+                                <h2>{actionType === 'CONFIRM' ? 'Potvrda Rezervacije' : 'Novi Termin'}</h2>
+                                <p>
+                                    {actionType === 'CONFIRM' ? (
+                                        <>Za igrača: <strong className="highlight">{selectedBooking?.user?.name || 'Nepoznato'}</strong></>
+                                    ) : (
+                                        actionModal && <>{format(actionModal.date, "dd.MM.")} u <strong className="highlight">{actionModal.time}</strong>h</>
+                                    )}
+                                </p>
                             </div>
                             <button className="close-btn" onClick={closeModal}><X /></button>
                         </div>
 
-                        {!actionType && isAdmin ? (
+                        {actionType === 'CONFIRM' ? (
+                            <div className="modal-body">
+                                <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px' }}>
+                                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
+                                        Datum: <strong>{format(parseISO(selectedBooking.startDateTime), "d.M. (EEEE)", { locale: hr })}</strong>
+                                    </p>
+                                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
+                                        Vrijeme: <strong>{format(parseISO(selectedBooking.startDateTime), "HH:mm")} - {format(parseISO(selectedBooking.endDateTime), "HH:mm")}</strong>
+                                    </p>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="checkbox-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.isWithCoach}
+                                            onChange={(e) => setForm({ ...form, isWithCoach: e.target.checked })}
+                                        />
+                                        Trener prisutan (sa mnom)
+                                    </label>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                        {form.isWithCoach ? "Rezervacija će biti potvrđena kao trening s trenerom." : "Rezervacija će biti potvrđena kao samostalni trening (najam stola)."}
+                                    </p>
+                                </div>
+
+                                <button
+                                    className="btn btn-primary full-width"
+                                    onClick={handleConfirmPending}
+                                    disabled={saving}
+                                >
+                                    {saving ? <Loader2 className="animate-spin" /> : "Odobri Rezervaciju"}
+                                </button>
+                            </div>
+                        ) : !actionType && isAdmin ? (
                             <div className="action-selector">
                                 <button className="select-btn book" onClick={() => setActionType('BOOK')}>
                                     <User size={24} />
@@ -446,14 +547,51 @@ export default function UnifiedCalendar() {
                                 )}
 
                                 {isAdmin && actionType === 'BOOK' && (
-                                    <div className="form-group">
-                                        <label>Ime Igrača</label>
-                                        <input
-                                            placeholder="Tko dolazi na trening?"
-                                            value={form.playerName}
-                                            onChange={(e) => setForm({ ...form, playerName: e.target.value })}
-                                        />
-                                    </div>
+                                    <>
+                                        <div className="form-group">
+                                            <label>Odaberi postojećeg igrača</label>
+                                            <select
+                                                value={form.selectedUserId}
+                                                onChange={(e) => setForm({ ...form, selectedUserId: e.target.value })}
+                                            >
+                                                <option value="">-- Odaberi korisnika (ili upiši dolje) --</option>
+                                                {users.map(u => (
+                                                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {!form.selectedUserId && (
+                                            <div className="form-group">
+                                                <label>Ime Igrača (ručni unos)</label>
+                                                <input
+                                                    placeholder="Tko dolazi na trening?"
+                                                    value={form.playerName}
+                                                    onChange={(e) => setForm({ ...form, playerName: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="form-group">
+                                            <label className="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.isWithCoach}
+                                                    onChange={(e) => setForm({ ...form, isWithCoach: e.target.checked })}
+                                                />
+                                                Trener prisutan (sa mnom)
+                                            </label>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Napomena (opcionalno)</label>
+                                            <input
+                                                placeholder="Dodatne info..."
+                                                value={form.notes}
+                                                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                                            />
+                                        </div>
+                                    </>
                                 )}
 
                                 <button
