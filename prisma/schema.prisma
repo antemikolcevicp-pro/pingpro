@@ -74,7 +74,7 @@ model Team {
   inviteCode String   @unique @default(cuid())
   league     String?
   createdAt  DateTime @default(now())
-  coach      User     @relation("TeamCoach", fields: [coachId], references: [id])
+  coach      User     @relation("TeamCoach", fields: [coachId], references: [id], onDelete: Cascade)
   members    User[]   @relation("TeamMembers")
 }
 
@@ -99,7 +99,7 @@ model AvailabilitySlot {
   slotDurationMinutes Int       @default(60)
   isActive            Boolean   @default(true)
   locationId          String?
-  coach               User?     @relation(fields: [coachId], references: [id])
+  coach               User?     @relation(fields: [coachId], references: [id], onDelete: Cascade)
   location            Location? @relation(fields: [locationId], references: [id])
 }
 
@@ -117,7 +117,7 @@ model Booking {
   locationId       String?
   participantCount Int?          @default(1)
   tableCount       Int?          @default(1)
-  coach            User?         @relation("CoachBookings", fields: [coachId], references: [id])
+  coach            User?         @relation("CoachBookings", fields: [coachId], references: [id], onDelete: SetNull)
   location         Location?     @relation(fields: [locationId], references: [id])
   user             User?         @relation("PlayerBookings", fields: [userId], references: [id], onDelete: SetNull)
 }
