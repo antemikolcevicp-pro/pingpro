@@ -35,8 +35,8 @@ export async function POST(req: Request) {
         // Email Notification to Player if confirmed
         if (status === 'CONFIRMED' && updated.user?.email) {
             const startDate = new Date(updated.startDateTime);
-            const dateStr = startDate.toLocaleDateString("hr-HR");
-            const timeStr = startDate.toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" });
+            const dateStr = startDate.toLocaleDateString("hr-HR", { timeZone: "Europe/Zagreb" });
+            const timeStr = startDate.toLocaleTimeString("hr-HR", { timeZone: "Europe/Zagreb", hour: "2-digit", minute: "2-digit" });
             const payload = templates.bookingConfirmed(dateStr, timeStr);
 
             await sendBookingEmail(updated.user.email, payload.subject, payload.html);
