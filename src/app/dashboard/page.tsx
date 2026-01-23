@@ -203,12 +203,6 @@ export default function Dashboard() {
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: 'max-content' }} className="dashboard-actions">
-                    {/* @ts-ignore */}
-                    {(session?.user?.role === 'COACH' || session?.user?.role === 'ADMIN') && (
-                        <Link href="/admin/availability" className="btn glass" style={{ gap: '0.5rem', flex: 1 }}>
-                            <CalendarIcon size={20} /> Kalendar
-                        </Link>
-                    )}
                     <Link href="/book" className="btn btn-primary" style={{ gap: '0.5rem', flex: 1 }}>
                         <Plus size={20} /> Rezerviraj
                     </Link>

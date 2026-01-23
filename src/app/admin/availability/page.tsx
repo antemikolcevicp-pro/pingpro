@@ -248,7 +248,7 @@ export default function UnifiedCalendar() {
 
     return (
         <div className="calendar-page">
-            {isAdmin && <PendingBookingsBar />}
+
 
             <header className="page-header">
                 <div>
