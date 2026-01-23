@@ -56,13 +56,39 @@ export async function PATCH(req: Request) {
             return new NextResponse("Coaches cannot modify Admin accounts", { status: 403 });
         }
 
+        // Get old team ID to check for emptiness later
+        const oldTeamId = targetUser?.teamId;
+        const newTeamId = teamId === "none" ? null : teamId;
+
+        // If leaving a team (setting to null), clear SOKAZ info as requested
+        const shouldClearSokaz = newTeamId === null && oldTeamId !== null;
+
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
                 ...(role && { role }),
-                teamId: teamId === "none" ? null : teamId
+                teamId: newTeamId,
+                ...(shouldClearSokaz && {
+                    sokazId: null,
+                    sokazTeam: null,
+                    sokazStats: null,
+                    sokazLiga: null
+                })
             }
         });
+
+        // 🗑️ CLEANUP: If the old team is now empty, delete it
+        if (oldTeamId && oldTeamId !== newTeamId) {
+            const memberCount = await prisma.user.count({
+                where: { teamId: oldTeamId }
+            });
+
+            if (memberCount === 0) {
+                await prisma.team.delete({
+                    where: { id: oldTeamId }
+                });
+            }
+        }
 
         return NextResponse.json(updatedUser);
     } catch (error) {

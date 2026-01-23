@@ -59,6 +59,10 @@ export async function DELETE(
 
         if (!userId) return new NextResponse("User ID required", { status: 400 });
 
+        // Get current user to see which team they are leaving (it should be params.id, but let's be safe)
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { teamId: true } });
+        const oldTeamId = user?.teamId;
+
         // Verify user is actually in this team? Not strictly necessary if we just set teamId to null
         await prisma.user.update({
             where: { id: userId },
@@ -70,6 +74,19 @@ export async function DELETE(
                 sokazLiga: null
             }
         });
+
+        // 🗑️ CLEANUP: If the team is now empty, delete it
+        if (oldTeamId) {
+            const memberCount = await prisma.user.count({
+                where: { teamId: oldTeamId }
+            });
+
+            if (memberCount === 0) {
+                await prisma.team.delete({
+                    where: { id: oldTeamId }
+                });
+            }
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {
