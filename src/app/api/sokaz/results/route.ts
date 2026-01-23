@@ -1,18 +1,28 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
 
+    // Check query params first, or fallback to fresh DB data
+    const { searchParams } = new URL(req.url); // Not strictly needed if we fetch user fresh, but good for testing
     // @ts-ignore
-    const userTeam = session.user.sokazTeam;
-    // @ts-ignore
-    const userLigaContent = session.user.sokazLiga || ""; // e.g., "muška 1. liga"
+    const userId = session.user.id;
+
+    // Fetch fresh user data to ensure we use the latest linked team
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { sokazTeam: true, sokazLiga: true }
+    });
+
+    const userTeam = user?.sokazTeam;
+    const userLigaContent = user?.sokazLiga || "";
 
     if (!userTeam) {
-        return NextResponse.json({ error: "SOKAZ profile not linked or team missing" }, { status: 400 });
+        return NextResponse.json([], { status: 200 }); // Return empty array instead of error if not linked
     }
 
     console.log(`[SOKAZ Results] Fetching for Team: ${userTeam}, Liga: ${userLigaContent}`);

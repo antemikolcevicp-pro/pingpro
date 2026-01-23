@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Trophy, Calendar, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 
-export default function SokazResults() {
+export default function SokazResults({ sokazId, teamName }: { sokazId?: string, teamName?: string }) {
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
