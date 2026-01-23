@@ -722,21 +722,28 @@ export default function UnifiedCalendar() {
                 .week-label { display: flex; align-items: center; justify-content: center; flex: 1; font-weight: 800; font-size: 1.1rem; color: #fff; }
 
                 /* Week Grid Styles */
-                .week-grid { display: flex; flex-direction: column; overflow: hidden; background: rgba(0,0,0,0.1); }
-                .grid-header { display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); }
-                .time-col-spacer { width: 60px; border-right: 1px solid rgba(255,255,255,0.05); }
-                .day-col-header { flex: 1; padding: 1rem; display: flex; flex-direction: column; align-items: center; border-right: 1px solid rgba(255,255,255,0.05); }
+                .week-grid { display: flex; flex-direction: column; overflow: auto; background: rgba(0,0,0,0.1); position: relative; }
+                .grid-header { 
+                    display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); 
+                    background: #111; position: sticky; top: 0; z-index: 30;
+                }
+                .time-col-spacer { 
+                    width: 60px; border-right: 1px solid rgba(255,255,255,0.05); 
+                    position: sticky; left: 0; background: #111; z-index: 40;
+                }
+                .day-col-header { flex: 1; min-width: 100px; padding: 1rem; display: flex; flex-direction: column; align-items: center; border-right: 1px solid rgba(255,255,255,0.05); }
                 .day-col-header.today { background: rgba(227, 6, 19, 0.05); }
                 .day-col-header.today .day-num { color: var(--primary); }
                 .day-name { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: var(--text-muted); }
                 .day-num { font-size: 1rem; font-weight: 800; }
 
-                .grid-body { max-height: 600px; overflow-y: auto; }
+                .grid-body { flex: 1; }
                 .hour-row { display: flex; border-bottom: 1px solid rgba(255,255,255,0.03); height: 50px; }
                 .hour-row .time-col { 
                     width: 60px; font-size: 0.75rem; color: var(--text-muted); 
                     display: flex; align-items: center; justify-content: center;
                     border-right: 1px solid rgba(255,255,255,0.05);
+                    position: sticky; left: 0; background: #111; z-index: 20;
                 }
                 .day-cell { flex: 1; border-right: 1px solid rgba(255,255,255,0.03); cursor: pointer; position: relative; }
                 .day-cell:hover { background: rgba(255,255,255,0.02); }
