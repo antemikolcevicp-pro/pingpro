@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Calendar as CalendarIcon, Clock, Plus, Users, Loader2, Trophy, Activity, Phone } from "lucide-react";
 import SokazConnect from "@/components/SokazConnect";
 import SokazResults from "@/components/SokazResults";
+import TeamActivities from "@/components/TeamActivities";
 
 const DashboardRightSection = ({ session }: { session: any }) => {
     const [userStatus, setUserStatus] = useState<any>(null);
@@ -58,10 +59,7 @@ const DashboardRightSection = ({ session }: { session: any }) => {
 
                 <div className="tab-content">
                     {activeTab === 'activity' ? (
-                        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem' }}>
-                            <Users size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                            <p>Nema novih aktivnosti u tvom timu.</p>
-                        </div>
+                        <TeamActivities />
                     ) : (
                         <SokazResults sokazId={effectiveUser.sokazId} teamName={effectiveUser.sokazTeam} />
                     )}
