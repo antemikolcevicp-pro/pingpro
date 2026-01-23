@@ -69,7 +69,8 @@ export default function PendingBookingsBar() {
                                 <span className="player-name">{b.user.name}</span>
                                 <span className="time-info">
                                     <Calendar size={14} />
-                                    {format(parseISO(b.startDateTime), "dd.MM. HH:mm")}h
+                                    {parseISO(b.startDateTime).toLocaleDateString("hr-HR", { day: '2-digit', month: '2-digit' })}
+                                    {" "} {parseISO(b.startDateTime).toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" })}h
                                 </span>
                             </div>
                             <div className="actions">

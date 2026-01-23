@@ -300,7 +300,7 @@ export default function UnifiedCalendar() {
                     <>
                         <div className="timeline-header">
                             <CalendarIcon size={18} color="var(--primary)" />
-                            <h3>{format(selectedDate, "EEEE, d. MMMM", { locale: hr })}</h3>
+                            <h3>{selectedDate.toLocaleDateString("hr-HR", { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
                         </div>
 
                         <div className="timeline-grid">
@@ -332,7 +332,7 @@ export default function UnifiedCalendar() {
                                                                     {slot.activity.status === 'BLOCKED' ? 'ZAUZETO' : slot.activity.status === 'PENDING' ? 'NA ČEKANJU' : 'RESERVIRANO'}
                                                                 </span>
                                                                 <span className="title">{slot.activity.notes || slot.activity.user?.name || "Termin"}</span>
-                                                                <span className="time-range">{format(parseISO(slot.activity.startDateTime), "HH:mm")} - {format(parseISO(slot.activity.endDateTime), "HH:mm")}</span>
+                                                                <span className="time-range">{parseISO(slot.activity.startDateTime).toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" })} - {parseISO(slot.activity.endDateTime).toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" })}</span>
                                                             </div>
                                                             <div className="activity-actions">
                                                                 {slot.activity.status === 'PENDING' && isAdmin && (
@@ -444,7 +444,7 @@ export default function UnifiedCalendar() {
                                     {actionType === 'CONFIRM' ? (
                                         <>Za igrača: <strong className="highlight">{selectedBooking?.user?.name || 'Nepoznato'}</strong></>
                                     ) : (
-                                        actionModal && <>{format(actionModal.date, "dd.MM.")} u <strong className="highlight">{actionModal.time}</strong>h</>
+                                        actionModal && <>{actionModal.date.toLocaleDateString("hr-HR", { day: '2-digit', month: '2-digit' })} u <strong className="highlight">{actionModal.time}</strong>h</>
                                     )}
                                 </p>
                             </div>
@@ -455,10 +455,10 @@ export default function UnifiedCalendar() {
                             <div className="modal-body">
                                 <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px' }}>
                                     <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
-                                        Datum: <strong>{format(parseISO(selectedBooking.startDateTime), "d.M. (EEEE)", { locale: hr })}</strong>
+                                        Datum: <strong>{parseISO(selectedBooking.startDateTime).toLocaleDateString("hr-HR", { day: 'numeric', month: 'numeric', weekday: 'long' })}</strong>
                                     </p>
                                     <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
-                                        Vrijeme: <strong>{format(parseISO(selectedBooking.startDateTime), "HH:mm")} - {format(parseISO(selectedBooking.endDateTime), "HH:mm")}</strong>
+                                        Vrijeme: <strong>{parseISO(selectedBooking.startDateTime).toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" })} - {parseISO(selectedBooking.endDateTime).toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" })}</strong>
                                     </p>
                                 </div>
 

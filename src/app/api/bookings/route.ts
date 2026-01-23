@@ -97,8 +97,8 @@ export async function POST(req: Request) {
 
         // Email Notification to Coach for regular bookings
         if (initialStatus === 'PENDING' && booking.coach?.email) {
-            const dateStr = format(startObj, "d.M.yyyy");
-            const timeStr = format(startObj, "HH:mm");
+            const dateStr = startObj.toLocaleDateString("hr-HR");
+            const timeStr = startObj.toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" });
             const payload = templates.newBookingRequest(booking.user?.name || "Igrač", dateStr, timeStr);
 
             await sendBookingEmail(booking.coach.email, payload.subject, payload.html);
@@ -106,9 +106,9 @@ export async function POST(req: Request) {
 
         // Email Notification for Solo Training (no coach) - notify admin for approval
         if (initialStatus === 'PENDING' && !booking.coach) {
-            const dateStr = format(startObj, "d.M.yyyy");
-            const timeStr = format(startObj, "HH:mm");
-            const endTimeStr = format(endObj, "HH:mm");
+            const dateStr = startObj.toLocaleDateString("hr-HR");
+            const timeStr = startObj.toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" });
+            const endTimeStr = endObj.toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" });
 
             // Get first admin/coach to notify
             const admin = await prisma.user.findFirst({
