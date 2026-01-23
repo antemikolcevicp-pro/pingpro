@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Call Vercel Cron Endpoint
         run: |
-          curl -L -X GET ${{secrets.URL || 'prazno'}} \
+          curl -L -X GET "${{secrets.URL}}" \
           -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
