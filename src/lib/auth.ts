@@ -79,9 +79,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (!token.id) {
-        // If token has no ID (deleted user), return empty object to force invalid session
-        // @ts-ignore
-        return {};
+        // If token has no ID (deleted user), return null to force logout (casting to any to satisfy TS)
+        return null as any;
       }
 
       if (session.user) {
