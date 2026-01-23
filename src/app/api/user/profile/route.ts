@@ -3,17 +3,27 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(req: Request) {
+async function handler(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
     try {
-        const { name } = await req.json();
+        const body = await req.json();
+        const { name, phoneNumber } = body;
+        const dataToUpdate: any = {};
 
-        if (!name || name.trim().length < 2) {
-            return new NextResponse("Invalid name", { status: 400 });
+        if (name && name.trim().length >= 2) {
+            dataToUpdate.name = name.trim();
+        }
+
+        if (phoneNumber && phoneNumber.trim().length >= 5) {
+            dataToUpdate.phoneNumber = phoneNumber.trim();
+        }
+
+        if (Object.keys(dataToUpdate).length === 0) {
+            return new NextResponse("No valid fields to update", { status: 400 });
         }
 
         // @ts-ignore
@@ -21,7 +31,7 @@ export async function PATCH(req: Request) {
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: { name: name.trim() }
+            data: dataToUpdate
         });
 
         return NextResponse.json(updatedUser);
@@ -30,3 +40,5 @@ export async function PATCH(req: Request) {
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }
+
+export { handler as GET, handler as POST, handler as PATCH };

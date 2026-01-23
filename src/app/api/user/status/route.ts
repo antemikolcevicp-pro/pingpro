@@ -28,6 +28,13 @@ export async function GET() {
 
         if (!user) return new NextResponse("User not found", { status: 404 });
 
+        // Logic check: If user is not in a team (teamId is null), we should hide the SOKAZ team name 
+        // to prevent showing "stale" team connections, unless they have a direct SOKAZ ID (personal link).
+        // Even then, we might want to clear 'sokazTeam' so we don't fetch team results, only player results.
+        if (!user.teamId) {
+            user.sokazTeam = null;
+        }
+
         return NextResponse.json(user);
     } catch (error) {
         return new NextResponse("Internal Server Error", { status: 500 });
