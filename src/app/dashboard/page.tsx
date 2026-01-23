@@ -67,8 +67,8 @@ const DashboardRightSection = ({ session }: { session: any }) => {
                         <TeamActivities />
                     ) : (
                         <SokazResults
-                            sokazId={effectiveUser.sokazId}
-                            teamName={effectiveUser.sokazTeam || effectiveUser.team?.name}
+                            sokazId={effectiveUser?.sokazId}
+                            teamName={effectiveUser?.sokazTeam || effectiveUser?.team?.name}
                         />
                     )}
                 </div>

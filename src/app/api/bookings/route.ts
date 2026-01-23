@@ -110,6 +110,27 @@ export async function POST(req: Request) {
             await sendBookingEmail(booking.coach.email, payload.subject, payload.html);
         }
 
+        // Email Notification for Solo Training (HALL_ONLY) - notify admin
+        if (initialStatus === 'HALL_ONLY' && booking.user?.email) {
+            const dateStr = format(startObj, "d.M.yyyy");
+            const timeStr = format(startObj, "HH:mm");
+            const endTimeStr = format(endObj, "HH:mm");
+
+            // Send confirmation to user
+            const userPayload = {
+                subject: "Potvrda rezervacije - Samostalni trening",
+                html: `
+                    <h2>Pozdrav ${booking.user.name}!</h2>
+                    <p>Tvoja rezervacija samostalnog treninga je potvrđena.</p>
+                    <p><strong>Datum:</strong> ${dateStr}</p>
+                    <p><strong>Vrijeme:</strong> ${timeStr} - ${endTimeStr}</p>
+                    <p><strong>Lokacija:</strong> Stolnoteniska Dvorana Bakarić</p>
+                    <p>Vidimo se na terenu! 🏓</p>
+                `
+            };
+            await sendBookingEmail(booking.user.email, userPayload.subject, userPayload.html);
+        }
+
         return NextResponse.json(booking);
     } catch (error) {
         console.error("Error creating booking:", error);
