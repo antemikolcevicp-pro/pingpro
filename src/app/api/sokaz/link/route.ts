@@ -27,28 +27,54 @@ export async function POST(req: Request) {
         // @ts-ignore
         const userId = session.user.id;
 
-        // Update User in our database
-        const updatedUser = await prisma.user.update({
+        // Update User in our database with SOKAZ info
+        await prisma.user.update({
             where: { id: userId },
-            // @ts-ignore
             data: {
                 sokazId: sokazId.toString(),
                 sokazTeam: teamName,
-                sokazStats: stats ? `${stats} (${liga || ''})` : null,
+                sokazStats: stats ? `${stats} (${liga || '-'})` : null,
                 sokazLiga: liga
             }
         });
 
-        // Try to find a matching team in our system and join it automatically
+        // 🟢 AUTO TEAM MANAGEMENT
         if (teamName) {
-            const matchingTeam = await prisma.team.findFirst({
+            // Check if team exists
+            let team = await prisma.team.findFirst({
                 where: { name: { equals: teamName, mode: 'insensitive' } }
             });
 
-            if (matchingTeam) {
+            if (team) {
+                // Team exists -> Join if not in a team, and update League info
                 await prisma.user.update({
                     where: { id: userId },
-                    data: { teamId: matchingTeam.id }
+                    data: { teamId: team.id }
+                });
+
+                // Update team league if we have fresh info and it's missing or changed
+                if (liga && team.league !== liga) {
+                    await prisma.team.update({
+                        where: { id: team.id },
+                        data: { league: liga }
+                    });
+                }
+            } else {
+                // Team does NOT exist -> Create it!
+                // We make the current user the "coach/owner" of this auto-created team
+                team = await prisma.team.create({
+                    data: {
+                        name: teamName,
+                        // @ts-ignore
+                        coachId: userId, // The user who linked it becomes the owner/coach
+                        league: liga
+                    }
+                });
+
+                // Add user to the new team
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { teamId: team.id }
                 });
             }
         }

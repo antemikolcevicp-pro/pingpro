@@ -58,6 +58,17 @@ export const authOptions: NextAuthOptions = {
       if (trigger === "update" && session?.phoneNumber) {
         token.phoneNumber = session.phoneNumber;
       }
+
+      // Always refresh teamId from DB to ensure instant updates after linking
+      if (token.id) {
+        const userTeam = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { teamId: true }
+        });
+        // @ts-ignore
+        token.teamId = userTeam?.teamId;
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -76,6 +87,8 @@ export const authOptions: NextAuthOptions = {
         session.user.sokazStats = token.sokazStats;
         // @ts-ignore
         session.user.sokazLiga = token.sokazLiga;
+        // @ts-ignore
+        session.user.teamId = token.teamId;
       }
       return session;
     },

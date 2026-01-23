@@ -72,6 +72,7 @@ model Team {
   name       String
   coachId    String
   inviteCode String   @unique @default(cuid())
+  league     String?
   createdAt  DateTime @default(now())
   coach      User     @relation("TeamCoach", fields: [coachId], references: [id])
   members    User[]   @relation("TeamMembers")
