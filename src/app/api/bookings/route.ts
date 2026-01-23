@@ -34,7 +34,6 @@ export async function POST(req: Request) {
         // 🛡️ PAST BOOKING PREVENTION
         if (!isAdmin) {
             const now = new Date();
-            // Allow booking if it's at least 15 minutes away to avoid accidental past bookings
             const leadTime = addMinutes(now, 15);
             if (startObj < leadTime) {
                 return new NextResponse("Nije moguće rezervirati termin u prošlosti ili koji počinje za manje od 15 minuta.", { status: 400 });
@@ -49,12 +48,8 @@ export async function POST(req: Request) {
         };
 
         if (isSokaz) {
-            // SOKAZ blocks the entire location
             overlapQuery.locationId = locationId || "bakarić";
         } else {
-            // For Coach sessions, we check:
-            // 1. Is the coach busy ANYWHERE at this time?
-            // 2. Is this specific location BLOCKED or occupied by SOKAZ?
             overlapQuery.OR = [
                 { coachId: coachId },
                 {
@@ -82,15 +77,11 @@ export async function POST(req: Request) {
         const userRole = session.user.role;
         let initialStatus: any = (userRole === 'ADMIN' || userRole === 'COACH') ? 'CONFIRMED' : 'PENDING';
 
-        if (!coachId) {
-            initialStatus = 'HALL_ONLY';
-        }
-
         const booking = await prisma.booking.create({
             data: {
                 userId,
                 coachId: coachId || null,
-                locationId: locationId || "bakarić", // Defaulting as we hide UI
+                locationId: locationId || "bakarić",
                 startDateTime: startObj,
                 endDateTime: endObj,
                 status: initialStatus,
@@ -101,7 +92,7 @@ export async function POST(req: Request) {
             include: { coach: true, user: true, location: true }
         });
 
-        // Email Notification to Coach
+        // Email Notification to Coach for regular bookings
         if (initialStatus === 'PENDING' && booking.coach?.email) {
             const dateStr = format(startObj, "d.M.yyyy");
             const timeStr = format(startObj, "HH:mm");
@@ -110,25 +101,33 @@ export async function POST(req: Request) {
             await sendBookingEmail(booking.coach.email, payload.subject, payload.html);
         }
 
-        // Email Notification for Solo Training (HALL_ONLY) - notify admin
-        if (initialStatus === 'HALL_ONLY' && booking.user?.email) {
+        // Email Notification for Solo Training (no coach) - notify admin for approval
+        if (initialStatus === 'PENDING' && !booking.coach) {
             const dateStr = format(startObj, "d.M.yyyy");
             const timeStr = format(startObj, "HH:mm");
             const endTimeStr = format(endObj, "HH:mm");
 
-            // Send confirmation to user
-            const userPayload = {
-                subject: "Potvrda rezervacije - Samostalni trening",
-                html: `
-                    <h2>Pozdrav ${booking.user.name}!</h2>
-                    <p>Tvoja rezervacija samostalnog treninga je potvrđena.</p>
-                    <p><strong>Datum:</strong> ${dateStr}</p>
-                    <p><strong>Vrijeme:</strong> ${timeStr} - ${endTimeStr}</p>
-                    <p><strong>Lokacija:</strong> Stolnoteniska Dvorana Bakarić</p>
-                    <p>Vidimo se na terenu! 🏓</p>
-                `
-            };
-            await sendBookingEmail(booking.user.email, userPayload.subject, userPayload.html);
+            // Get first admin/coach to notify
+            const admin = await prisma.user.findFirst({
+                where: { role: { in: ['ADMIN', 'COACH'] } },
+                select: { email: true, name: true }
+            });
+
+            if (admin?.email) {
+                const adminPayload = {
+                    subject: "Nova rezervacija samostalnog treninga - Odobrenje potrebno",
+                    html: `
+                        <h2>Nova rezervacija samostalnog treninga</h2>
+                        <p><strong>Korisnik:</strong> ${booking.user?.name || 'Nepoznato'}</p>
+                        <p><strong>Datum:</strong> ${dateStr}</p>
+                        <p><strong>Vrijeme:</strong> ${timeStr} - ${endTimeStr}</p>
+                        <p><strong>Broj osoba:</strong> ${booking.participantCount}</p>
+                        <p>Molimo te da odobriš ili odbiješ ovu rezervaciju u admin panelu.</p>
+                        <p><a href="https://pingpro-eight.vercel.app/admin/availability">Otvori kalendar</a></p>
+                    `
+                };
+                await sendBookingEmail(admin.email, adminPayload.subject, adminPayload.html);
+            }
         }
 
         return NextResponse.json(booking);
@@ -175,8 +174,6 @@ export async function DELETE(req: Request) {
             }
         }
 
-        // Actually delete or cancel? User said "ukloni rezervaciju", usually means delete for blocks or cancel for sessions
-        // Let's go with delete for simplicity as requested "ukloni"
         await prisma.booking.delete({ where: { id } });
 
         return NextResponse.json({ success: true });
