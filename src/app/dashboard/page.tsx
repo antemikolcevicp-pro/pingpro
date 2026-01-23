@@ -9,7 +9,86 @@ import SokazResults from "@/components/SokazResults";
 import TeamActivities from "@/components/TeamActivities";
 import { useRouter } from "next/navigation";
 
-// ... (DashboardRightSection remains the same)
+const DashboardRightSection = ({ session }: { session: any }) => {
+    const [userStatus, setUserStatus] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'activity' | 'sokaz'>('activity');
+
+    useEffect(() => {
+        // Fetch fresh status to handle "stale session" issues (e.g. admin removed team)
+        fetch('/api/user/status')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data) setUserStatus(data);
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    }, []);
+
+    // If we have fresh data, use it. Otherwise fall back to session (initial load)
+    const effectiveUser = userStatus || session?.user;
+
+    // Show SOKAZ tab if user has linked profile OR belongs to a team (can see team results)
+    const hasSokazProfile = !!effectiveUser?.sokazId;
+    const hasTeam = !!effectiveUser?.teamId || !!effectiveUser?.sokazTeam;
+    const canShowSokaz = hasSokazProfile || hasTeam;
+
+    // Reset tab to SOKAZ if it just got linked
+    useEffect(() => {
+        if (hasSokazProfile && !loading) setActiveTab('sokaz');
+    }, [hasSokazProfile, loading]);
+
+    if (loading) return <div className="card glass flex-center" style={{ minHeight: '200px' }}><Loader2 className="animate-spin" /></div>;
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <SokazConnect initialInfo={effectiveUser} onLinkSuccess={(newData: any) => setUserStatus(newData)} />
+
+            <div className="card glass" style={{ padding: '1.5rem', minHeight: '400px' }}>
+                <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    <button
+                        onClick={() => setActiveTab('activity')}
+                        className={`tab-btn ${activeTab === 'activity' ? 'active' : ''}`}
+                    >
+                        <Activity size={18} /> Aktivnost
+                    </button>
+                    {canShowSokaz && (
+                        <button
+                            onClick={() => setActiveTab('sokaz')}
+                            className={`tab-btn ${activeTab === 'sokaz' ? 'active-sokaz' : ''}`}
+                        >
+                            <Trophy size={18} /> SOKAZ
+                        </button>
+                    )}
+                </div>
+
+                <div className="tab-content">
+                    {activeTab === 'activity' ? (
+                        <TeamActivities />
+                    ) : (
+                        <SokazResults
+                            sokazId={effectiveUser.sokazId}
+                            teamName={effectiveUser.sokazTeam || effectiveUser.team?.name}
+                        />
+                    )}
+                </div>
+            </div>
+
+            <style jsx>{`
+                .tab-btn {
+                    background: none; border: none; padding: 0.5rem 0;
+                    color: var(--text-muted); cursor: pointer; font-weight: 600;
+                    display: flex; align-items: center; gap: 0.5rem;
+                    border-bottom: 2px solid transparent; transition: all 0.2s;
+                }
+                .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+                .tab-btn.active-sokaz { color: var(--secondary); border-bottom-color: var(--secondary); }
+                .tab-btn:hover { color: #fff; }
+                .flex-center { display: flex; align-items: center; justify-content: center; }
+            `}</style>
+        </div>
+    );
+};
 
 export default function Dashboard() {
     const { data: session, update } = useSession();
