@@ -3,31 +3,30 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: Request) {
+export async function PATCH(req: Request) {
     const session = await getServerSession(authOptions);
-
     if (!session?.user) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
     try {
-        const { phoneNumber } = await req.json();
+        const { name } = await req.json();
 
-        if (!phoneNumber) {
-            return new NextResponse("Phone number is required", { status: 400 });
+        if (!name || name.trim().length < 2) {
+            return new NextResponse("Invalid name", { status: 400 });
         }
 
         // @ts-ignore
         const userId = session.user.id;
 
-        await prisma.user.update({
+        const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: { phoneNumber },
+            data: { name: name.trim() }
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json(updatedUser);
     } catch (error) {
-        console.error("Profile update error:", error);
+        console.error("Error updating profile:", error);
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }
