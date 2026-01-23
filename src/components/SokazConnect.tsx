@@ -89,27 +89,30 @@ export default function SokazConnect({ initialInfo }: { initialInfo?: any }) {
                 Poveži svoj profil s official SOKAZ bazom za automatski ulazak u tim i praćenje skora.
             </p>
 
-            <form onSubmit={handleSearch} style={{ position: 'relative', marginBottom: '1rem' }}>
-                <input
-                    type="text"
-                    placeholder="Tvoje ime i prezime..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        paddingLeft: '2.5rem',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '12px',
-                        color: '#fff'
-                    }}
-                />
-                <Search size={18} style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+            <form onSubmit={handleSearch} style={{ position: 'relative', marginBottom: '1rem', display: 'flex', gap: '8px' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                    <input
+                        type="text"
+                        placeholder="Ime i prezime..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem 1rem',
+                            paddingLeft: '2.5rem',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '12px',
+                            color: '#fff',
+                            fontSize: '16px' // Prevents zoom on mobile
+                        }}
+                    />
+                    <Search size={18} style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                </div>
                 <button
                     type="submit"
                     className="btn btn-primary"
-                    style={{ position: 'absolute', right: '5px', top: '5px', bottom: '5px', padding: '0 1rem', fontSize: '0.8rem' }}
+                    style={{ padding: '0 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                     disabled={loading || query.length < 3}
                 >
                     {loading ? <Loader2 className="animate-spin" size={16} /> : "Traži"}

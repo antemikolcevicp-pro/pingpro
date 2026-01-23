@@ -62,7 +62,13 @@ export async function DELETE(
         // Verify user is actually in this team? Not strictly necessary if we just set teamId to null
         await prisma.user.update({
             where: { id: userId },
-            data: { teamId: null }
+            data: {
+                teamId: null,
+                sokazId: null,
+                sokazTeam: null,
+                sokazStats: null,
+                sokazLiga: null
+            }
         });
 
         return NextResponse.json({ success: true });
