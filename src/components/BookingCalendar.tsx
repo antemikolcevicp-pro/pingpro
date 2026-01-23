@@ -100,7 +100,7 @@ export default function BookingCalendar() {
                     startTime: startStr,
                     duration: form.duration,
                     notes: form.notes,
-                    coachId: selectedCoachId || null,
+                    coachId: selectedCoachId || undefined,
                     locationId: "bakarić",
                     isSokaz: bookingType === 'SOKAZ',
                     participantCount: form.participantCount,
