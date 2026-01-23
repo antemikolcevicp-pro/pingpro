@@ -41,4 +41,14 @@ async function handler(req: Request) {
     }
 }
 
-export { handler as GET, handler as POST, handler as PATCH };
+export async function POST(req: Request) {
+    return handler(req);
+}
+
+export async function PATCH(req: Request) {
+    return handler(req);
+}
+
+export async function GET(req: Request) {
+    return handler(req);
+}

@@ -17,6 +17,7 @@ export async function GET() {
                 id: true,
                 teamId: true,
                 team: {
+                    // @ts-ignore
                     select: { name: true, league: true }
                 },
                 sokazId: true,
@@ -28,11 +29,23 @@ export async function GET() {
 
         if (!user) return new NextResponse("User not found", { status: 404 });
 
-        // Logic check: If user is not in a team (teamId is null), we should hide the SOKAZ team name 
-        // to prevent showing "stale" team connections, unless they have a direct SOKAZ ID (personal link).
-        // Even then, we might want to clear 'sokazTeam' so we don't fetch team results, only player results.
-        if (!user.teamId) {
+        // Logic check: If user is not in a team (teamId is null), we should clear the SOKAZ info
+        // to prevent showing "stale" team connections.
+        if (!user.teamId && (user.sokazId || user.sokazTeam)) {
+            // Update in DB to make it permanent
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    sokazId: null,
+                    sokazTeam: null,
+                    sokazStats: null,
+                    sokazLiga: null
+                }
+            });
+            // Reflect in local object for immediate response
+            user.sokazId = null;
             user.sokazTeam = null;
+            user.sokazStats = null;
         }
 
         return NextResponse.json(user);
