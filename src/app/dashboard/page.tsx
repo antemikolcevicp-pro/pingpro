@@ -26,12 +26,16 @@ const DashboardRightSection = ({ session }: { session: any }) => {
 
     // If we have fresh data, use it. Otherwise fall back to session (initial load)
     const effectiveUser = userStatus || session?.user;
-    const isSokazLinked = !!effectiveUser?.sokazId;
+
+    // Show SOKAZ tab if user has linked profile OR belongs to a team (can see team results)
+    const hasSokazProfile = !!effectiveUser?.sokazId;
+    const hasTeam = !!effectiveUser?.teamId || !!effectiveUser?.sokazTeam;
+    const canShowSokaz = hasSokazProfile || hasTeam;
 
     // Reset tab to SOKAZ if it just got linked
     useEffect(() => {
-        if (isSokazLinked && !loading) setActiveTab('sokaz');
-    }, [isSokazLinked, loading]);
+        if (hasSokazProfile && !loading) setActiveTab('sokaz');
+    }, [hasSokazProfile, loading]);
 
     if (loading) return <div className="card glass flex-center" style={{ minHeight: '200px' }}><Loader2 className="animate-spin" /></div>;
 
@@ -47,7 +51,7 @@ const DashboardRightSection = ({ session }: { session: any }) => {
                     >
                         <Activity size={18} /> Aktivnost
                     </button>
-                    {isSokazLinked && (
+                    {canShowSokaz && (
                         <button
                             onClick={() => setActiveTab('sokaz')}
                             className={`tab-btn ${activeTab === 'sokaz' ? 'active-sokaz' : ''}`}
@@ -61,7 +65,10 @@ const DashboardRightSection = ({ session }: { session: any }) => {
                     {activeTab === 'activity' ? (
                         <TeamActivities />
                     ) : (
-                        <SokazResults sokazId={effectiveUser.sokazId} teamName={effectiveUser.sokazTeam} />
+                        <SokazResults
+                            sokazId={effectiveUser.sokazId}
+                            teamName={effectiveUser.sokazTeam || effectiveUser.team?.name}
+                        />
                     )}
                 </div>
             </div>

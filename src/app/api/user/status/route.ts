@@ -16,6 +16,9 @@ export async function GET() {
             select: {
                 id: true,
                 teamId: true,
+                team: {
+                    select: { name: true, league: true }
+                },
                 sokazId: true,
                 sokazTeam: true,
                 sokazStats: true,

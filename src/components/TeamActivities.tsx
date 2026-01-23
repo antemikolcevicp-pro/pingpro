@@ -42,11 +42,11 @@ export default function TeamActivities() {
                         alignItems: 'center', justifyContent: 'center',
                         color: 'var(--primary)', fontWeight: 'bold'
                     }}>
-                        {booking.user.name?.charAt(0) || 'U'}
+                        {booking.user?.name?.charAt(0) || 'U'}
                     </div>
                     <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: '600', fontSize: '0.95rem', marginBottom: '0.25rem' }}>
-                            {booking.user.name}
+                            {booking.user?.name || 'Nepoznati član'}
                         </div>
                         <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

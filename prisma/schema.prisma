@@ -105,7 +105,7 @@ model AvailabilitySlot {
 
 model Booking {
   id               String        @id @default(cuid())
-  userId           String
+  userId           String?
   coachId          String?
   startDateTime    DateTime
   endDateTime      DateTime
@@ -119,7 +119,7 @@ model Booking {
   tableCount       Int?          @default(1)
   coach            User?         @relation("CoachBookings", fields: [coachId], references: [id])
   location         Location?     @relation(fields: [locationId], references: [id])
-  user             User          @relation("PlayerBookings", fields: [userId], references: [id])
+  user             User?         @relation("PlayerBookings", fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model BookingBlock {

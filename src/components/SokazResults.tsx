@@ -9,7 +9,11 @@ export default function SokazResults({ sokazId, teamName }: { sokazId?: string, 
     const [error, setError] = useState("");
 
     useEffect(() => {
-        fetch("/api/sokaz/results")
+        const queryParams = new URLSearchParams();
+        if (teamName) queryParams.set("teamName", teamName);
+        if (sokazId) queryParams.set("sokazId", sokazId);
+
+        fetch(`/api/sokaz/results?${queryParams.toString()}`)
             .then(res => {
                 if (!res.ok) throw new Error("Neuspješno dohvaćanje rezultata.");
                 return res.json();
@@ -22,7 +26,7 @@ export default function SokazResults({ sokazId, teamName }: { sokazId?: string, 
                 setError(err.message);
                 setLoading(false);
             });
-    }, []);
+    }, [sokazId, teamName]);
 
     if (loading) return (
         <div className="card glass flex-center" style={{ padding: '3rem' }}>

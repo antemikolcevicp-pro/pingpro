@@ -105,7 +105,7 @@ export async function POST(req: Request) {
         if (initialStatus === 'PENDING' && booking.coach?.email) {
             const dateStr = format(startObj, "d.M.yyyy");
             const timeStr = format(startObj, "HH:mm");
-            const payload = templates.newBookingRequest(booking.user.name || "Igrač", dateStr, timeStr);
+            const payload = templates.newBookingRequest(booking.user?.name || "Igrač", dateStr, timeStr);
 
             await sendBookingEmail(booking.coach.email, payload.subject, payload.html);
         }

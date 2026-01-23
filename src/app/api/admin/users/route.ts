@@ -130,7 +130,7 @@ export async function DELETE(req: Request) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error(error);
-        return new NextResponse("Internal Server Error", { status: 500 });
+        console.error("Delete Error:", error);
+        return new NextResponse("Internal Server Error: " + (error as any).message, { status: 500 });
     }
 }

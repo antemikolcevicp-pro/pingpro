@@ -9,6 +9,8 @@ export async function GET(req: Request) {
 
     // Check query params first, or fallback to fresh DB data
     const { searchParams } = new URL(req.url); // Not strictly needed if we fetch user fresh, but good for testing
+    const teamParam = searchParams.get("teamName");
+
     // @ts-ignore
     const userId = session.user.id;
 
@@ -18,8 +20,11 @@ export async function GET(req: Request) {
         select: { sokazTeam: true, sokazLiga: true }
     });
 
-    const userTeam = user?.sokazTeam;
+    // Use direct SOKAZ team if linked, otherwise try param (from local team name)
+    const userTeam = user?.sokazTeam || teamParam;
     const userLigaContent = user?.sokazLiga || "";
+    // Note: If falling back to local team, we might lack "userLigaContent" so we default to "1. liga" logic later
+
 
     if (!userTeam) {
         return NextResponse.json([], { status: 200 }); // Return empty array instead of error if not linked
