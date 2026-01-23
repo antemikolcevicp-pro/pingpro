@@ -55,6 +55,18 @@ export default function Navigation() {
                                 </>
                             )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '0.5rem', borderLeft: '1px solid var(--border)', paddingLeft: '0.75rem' }}>
+                                {session.user?.image && (
+                                    <img
+                                        src={session.user.image}
+                                        alt="Profile"
+                                        style={{
+                                            width: '24px',
+                                            height: '24px',
+                                            borderRadius: '50%',
+                                            objectFit: 'cover'
+                                        }}
+                                    />
+                                )}
                                 <span className="desktop-only" style={{
                                     color: 'var(--text-muted)',
                                     fontSize: '0.85rem',

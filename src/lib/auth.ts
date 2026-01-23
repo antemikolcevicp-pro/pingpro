@@ -34,11 +34,17 @@ export const authOptions: NextAuthOptions = {
         // @ts-ignore
         token.sokazLiga = user.sokazLiga;
       } else if (token.id) {
-        // Fetch latest role from DB if not in login flow
+        // Fetch latest role and check existence to handle deletions
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { role: true, phoneNumber: true, sokazId: true, sokazTeam: true, sokazStats: true, sokazLiga: true }
         });
+
+        if (!dbUser) {
+          // User was deleted from DB -> Invalidate token
+          return {};
+        }
+
         if (dbUser) {
           // @ts-ignore
           token.role = dbUser.role;
@@ -72,6 +78,12 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      if (!token.id) {
+        // If token has no ID (deleted user), return empty object to force invalid session
+        // @ts-ignore
+        return {};
+      }
+
       if (session.user) {
         // @ts-ignore
         session.user.role = token.role;
