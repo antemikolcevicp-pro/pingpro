@@ -3,12 +3,14 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import Navigation from "@/components/Navigation";
+import ChatFloatingButton from "@/components/chat/ChatFloatingButton";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "PingPro - Privatni Trening (Stolni Tenis)",
   description: "Rezervirajte svoj termin za privatni trening stolnog tenisa.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -24,6 +26,7 @@ export default function RootLayout({
           <main className="container">
             {children}
           </main>
+          <ChatFloatingButton />
         </Providers>
       </body>
     </html>

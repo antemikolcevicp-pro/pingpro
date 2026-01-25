@@ -84,6 +84,8 @@ export default function BookingCalendar() {
         }
     };
 
+    const [successBooking, setSuccessBooking] = useState<any>(null);
+
     const handleBooking = async () => {
         if (!bookingModal) return;
         setSaving(true);
@@ -109,6 +111,13 @@ export default function BookingCalendar() {
             });
 
             if (res.ok) {
+                const coachName = coaches.find(c => c.id === selectedCoachId)?.name || 'Samostalni trening';
+                setSuccessBooking({
+                    date: d,
+                    duration: form.duration,
+                    coachName,
+                    type: bookingType
+                });
                 setBookingModal(null);
                 fetchDayData();
             } else {
@@ -200,6 +209,37 @@ export default function BookingCalendar() {
     };
 
     const timeline = generateTimeline();
+
+    const downloadICS = () => {
+        if (!successBooking) return;
+        const { date, duration, coachName } = successBooking;
+        const end = addMinutes(date, duration);
+
+        const formatICSDate = (d: Date) => format(d, "yyyyMMdd'T'HHmmss");
+
+        const icsContent = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//PingPro//Booking//HR",
+            "BEGIN:VEVENT",
+            `DTSTART:${formatICSDate(date)}`,
+            `DTEND:${formatICSDate(end)}`,
+            `SUMMARY:Stolni Tenis: ${coachName}`,
+            "LOCATION:Stolnoteniska Dvorana Bakarić, Velika Gorica",
+            `DESCRIPTION:Trening u dvorani Bakarić. Trener: ${coachName}`,
+            "END:VEVENT",
+            "END:VCALENDAR"
+        ].join("\r\n");
+
+        const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `trening-${format(date, "yyyy-MM-dd")}.ics`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     return (
         <div className="booking-timeline">
@@ -345,7 +385,6 @@ export default function BookingCalendar() {
                 </div>
             </div>
 
-            {/* BOOKING MODAL */}
             {bookingModal && (
                 <div className="modal-overlay">
                     <div className="modal-content glass card">
@@ -408,6 +447,28 @@ export default function BookingCalendar() {
                                 disabled={saving}
                             >
                                 {saving ? <Loader2 className="animate-spin" /> : "Potvrdi Rezervaciju"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SUCCESS MODAL */}
+            {successBooking && (
+                <div className="modal-overlay">
+                    <div className="modal-content glass card success-modal" style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
+                        <h2 className="gradient-text">Uspješna rezervacija!</h2>
+                        <p style={{ marginBottom: '2rem', color: 'var(--text-muted)' }}>
+                            Tvoj termin je potvrđen. Vidimo se u dvorani!
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <button className="btn glass full-width" style={{ gap: '0.75rem' }} onClick={downloadICS}>
+                                <CalendarIcon size={20} color="var(--primary)" /> Spremi u kalendar
+                            </button>
+                            <button className="btn btn-primary full-width" onClick={() => setSuccessBooking(null)}>
+                                Super, hvala!
                             </button>
                         </div>
                     </div>

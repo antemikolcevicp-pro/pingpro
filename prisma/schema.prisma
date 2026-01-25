@@ -57,6 +57,8 @@ model User {
   sessions          Session[]
   managedTeams      Team[]             @relation("TeamCoach")
   team              Team?              @relation("TeamMembers", fields: [teamId], references: [id])
+  conversations     Conversation[]     @relation("UserConversations")
+  messages          Message[]
 }
 
 model VerificationToken {
@@ -146,4 +148,28 @@ enum BookingStatus {
   BLOCKED
   COMPLETED
   HALL_ONLY
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  messages  Message[]
+  users     User[]    @relation("UserConversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  text           String
+  image          String?
+  createdAt      DateTime     @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  isSeen         Boolean      @default(false)
 }
