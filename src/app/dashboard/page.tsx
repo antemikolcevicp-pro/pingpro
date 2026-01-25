@@ -104,19 +104,40 @@ export default function Dashboard() {
     const [historySearch, setHistorySearch] = useState("");
     const router = useRouter();
 
-    const fetchBookings = () => {
-        if (session) {
-            fetch("/api/user/bookings")
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) setBookings(data);
-                    setLoading(false);
-                })
-                .catch(error => {
-                    console.error("Failed to fetch bookings:", error);
-                    setLoading(false);
-                });
+    const fetchBookings = (force = false) => {
+        if (!session) return;
+
+        // Simple internal cache logic to save CU
+        const CACHE_KEY = `bookings_${(session.user as any)?.id}`;
+        const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
+        const now = Date.now();
+        const lastFetch = typeof window !== 'undefined' ? sessionStorage.getItem(CACHE_TIME_KEY) : null;
+
+        if (!force && lastFetch && (now - parseInt(lastFetch)) < 60000) {
+            const cachedData = sessionStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                setBookings(JSON.parse(cachedData));
+                setLoading(false);
+                return;
+            }
         }
+
+        fetch("/api/user/bookings")
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setBookings(data);
+                    if (typeof window !== 'undefined') {
+                        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                        sessionStorage.setItem(CACHE_TIME_KEY, now.toString());
+                    }
+                }
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error("Failed to fetch bookings:", error);
+                setLoading(false);
+            });
     };
 
     useEffect(() => {
@@ -252,7 +273,7 @@ export default function Dashboard() {
                 </div>
             </header>
 
-            {isCoach && <CoachAgenda bookings={bookings} onUpdate={fetchBookings} />}
+            {isCoach && <CoachAgenda bookings={bookings} onUpdate={() => fetchBookings(true)} />}
 
             <div className="grid-responsive">
                 <section>

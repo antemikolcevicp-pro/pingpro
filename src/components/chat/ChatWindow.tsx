@@ -89,23 +89,10 @@ export default function ChatWindow({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text, conversationId }),
             });
-
-            if (res.ok) {
-                // Refresh after 1.7 seconds as requested
-                setTimeout(() => fetchMessages(), 1700);
-            }
         } catch (err) {
             console.error(err);
         }
     };
-
-    // Auto-refresh every 5 seconds for the recipient
-    useEffect(() => {
-        const interval = setInterval(() => {
-            fetchMessages();
-        }, 5000);
-        return () => clearInterval(interval);
-    }, [conversationId]);
 
     return (
         <div className="chat-window card">

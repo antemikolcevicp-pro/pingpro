@@ -26,7 +26,7 @@ export default function RootLayout({
           <main className="container">
             {children}
           </main>
-          <ChatFloatingButton />
+          {/* <ChatFloatingButton /> */}
         </Providers>
       </body>
     </html>
