@@ -276,7 +276,7 @@ export default function BookingCalendar() {
                                         {slot.activity ? (
                                             isNewActivity ? (
                                                 <div
-                                                    className={`activity-block ${slot.activity.status} ${isMine ? 'mine' : ''} ${slot.activity.notes?.startsWith('SOKAZ') ? 'sokaz-theme' : ''}`}
+                                                    className={`activity-block ${slot.activity.status} ${isMine ? 'mine' : ''} ${slot.activity.notes?.startsWith('SOKAZ') ? 'sokaz-theme' : ''} ${slot.activity.coachId ? 'coach-theme' : ''}`}
                                                     style={{ height: `${slotsCount * 60 - 8}px`, zIndex: 20 }}
                                                 >
                                                     <div className="activity-info">
@@ -465,6 +465,7 @@ export default function BookingCalendar() {
                 .activity-block.CONFIRMED { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid var(--border); }
                 .activity-block.PENDING { background: rgba(255, 255, 255, 0.05); border: 1px dotted rgba(255, 255, 255, 0.2); border-left: 4px solid #fff; }
                 .activity-block.mine { background: linear-gradient(to right, rgba(0, 75, 147, 0.25), rgba(0, 75, 147, 0.1)); border: 1px solid var(--secondary); border-left: 4px solid var(--secondary); }
+                .activity-block.coach-theme { background: linear-gradient(to right, rgba(147, 51, 234, 0.2), rgba(147, 51, 234, 0.05)); border: 1px solid rgba(147, 51, 234, 0.3); border-left: 4px solid #a855f7; }
                 .activity-block.sokaz-theme { background: rgba(255, 165, 0, 0.15); border: 1px solid rgba(255, 165, 0, 0.3); border-left: 4px solid #ffa500; }
                 
                 .slot-row.past { opacity: 0.4; pointer-events: none; filter: grayscale(0.8); }

@@ -345,7 +345,7 @@ export default function UnifiedCalendar() {
                                                 {slot.activity ? (
                                                     isNewActivity ? (
                                                         <div
-                                                            className={`activity-block ${slot.activity.status}`}
+                                                            className={`activity-block ${slot.activity.status} ${slot.activity.coachId ? 'COACH_PRESENT' : ''}`}
                                                             style={{ height: `${slotsCount * 60 - 8}px`, zIndex: 20 }}
                                                         >
                                                             <div className="activity-info">
@@ -430,7 +430,7 @@ export default function UnifiedCalendar() {
                                                     onClick={() => !activity && setActionModal({ time: `${hour}:00`, date: day })}
                                                 >
                                                     {activity && (
-                                                        <div className={`week-activity ${activity.status} ${activity.notes?.startsWith('SOKAZ') ? 'SOKAZ' : ''}`}>
+                                                        <div className={`week-activity ${activity.status} ${activity.notes?.startsWith('SOKAZ') ? 'SOKAZ' : ''} ${activity.coachId ? 'COACH_PRESENT' : ''}`}>
                                                             <div className="activity-main">
                                                                 {activity.status === 'BLOCKED' ? <Lock size={10} /> : <User size={10} />}
                                                                 <span>{getActivityTitle(activity)}</span>
@@ -673,12 +673,15 @@ export default function UnifiedCalendar() {
                 }
                 .activity-block.BLOCKED { background: linear-gradient(to right, rgba(227, 6, 19, 0.2), rgba(227, 6, 19, 0.05)); border: 1px solid rgba(227, 6, 19, 0.3); border-left: 4px solid var(--primary); }
                 .activity-block.CONFIRMED { background: linear-gradient(to right, rgba(0, 75, 147, 0.2), rgba(0, 75, 147, 0.05)); border: 1px solid rgba(0, 75, 147, 0.3); border-left: 4px solid var(--secondary); }
+                .activity-block.CONFIRMED.COACH_PRESENT { background: linear-gradient(to right, rgba(147, 51, 234, 0.2), rgba(147, 51, 234, 0.05)); border: 1px solid rgba(147, 51, 234, 0.3); border-left: 4px solid #a855f7; }
                 .activity-block.PENDING { background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)); border: 1px solid rgba(255, 255, 255, 0.1); border-left: 4px solid #fff; }
+                .activity-block.PENDING.COACH_PRESENT { background: linear-gradient(to right, rgba(147, 51, 234, 0.1), rgba(147, 51, 234, 0.05)); border: 1px solid rgba(147, 51, 234, 0.2); border-left: 4px solid #a855f7; }
                 
                 .activity-info { display: flex; flex-direction: column; gap: 2px; }
                 .type-badge { font-size: 0.6rem; font-weight: 900; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.6); }
                 .activity-block.BLOCKED .type-badge { color: var(--primary); }
                 .activity-block.CONFIRMED .type-badge { color: var(--secondary); }
+                .activity-block.COACH_PRESENT .type-badge { color: #a855f7; }
                 .activity-block.PENDING .type-badge { color: #fff; }
 
                 .activity-actions { display: flex; gap: 6px; }
@@ -781,7 +784,9 @@ export default function UnifiedCalendar() {
 
                 .week-activity.BLOCKED { background: rgba(227, 6, 19, 0.2); border-left: 2px solid var(--primary); color: var(--primary); }
                 .week-activity.CONFIRMED { background: rgba(0, 150, 255, 0.2); border-left: 2px solid #0096ff; color: #0096ff; }
+                .week-activity.CONFIRMED.COACH_PRESENT { background: rgba(147, 51, 234, 0.2); border-left: 2px solid #a855f7; color: #a855f7; }
                 .week-activity.PENDING { background: rgba(255, 255, 255, 0.1); border-left: 2px solid #fff; color: #fff; }
+                .week-activity.PENDING.COACH_PRESENT { background: rgba(147, 51, 234, 0.1); border-left: 2px solid #a855f7; color: #a855f7; }
                 .week-activity.SOKAZ { background: rgba(255, 165, 0, 0.2); border-left: 2px solid #ffa500; color: #ffa500; }
 
                 .week-delete-btn { 
