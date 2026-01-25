@@ -31,7 +31,12 @@ export async function GET(req: Request) {
                 startDateTime: dateRange
             },
             include: {
-                user: { select: { name: true } },
+                user: {
+                    select: {
+                        name: true,
+                        team: { select: { name: true } }
+                    }
+                },
                 coach: { select: { name: true } }
             },
             orderBy: { startDateTime: 'desc' }
@@ -44,6 +49,8 @@ export async function GET(req: Request) {
                 id: b.id,
                 date: b.startDateTime,
                 playerName: b.user?.name || "Nepoznati igrač",
+                teamName: b.user?.team?.name || "Individualno",
+                coachId: b.coachId,
                 coachName: b.coach?.name || "Samo dvorana",
                 durationMinutes: dur,
                 hours: (dur / 60).toFixed(1)
