@@ -220,6 +220,27 @@ export default function UnifiedCalendar() {
         setForm({ duration: 90, notes: "", playerName: "", selectedUserId: "", isWithCoach: true, isAllDay: false, recurrence: 'NONE' });
     };
 
+    const getActivityTitle = (act: any) => {
+        if (!act) return "Termin";
+        if (act.status === 'BLOCKED') return act.notes || "Zauzeto";
+
+        const userName = act.user?.name;
+        const notes = act.notes;
+
+        if (notes?.startsWith("Manualna rezervacija:")) {
+            return notes.replace("Manualna rezervacija: ", "");
+        }
+
+        if (userName) {
+            if (notes && notes !== "Trening s trenerom" && notes !== "Samostalni trening" && !notes.startsWith("Rezervacija:")) {
+                return `${userName} (${notes})`;
+            }
+            return userName;
+        }
+
+        return notes || "Termin";
+    };
+
     const generateTimeline = () => {
         const slots = [];
         let current = startOfDay(selectedDate);
@@ -332,7 +353,7 @@ export default function UnifiedCalendar() {
                                                                     {slot.activity.status === 'BLOCKED' ? <Lock size={12} /> : <User size={12} />}
                                                                     {slot.activity.status === 'BLOCKED' ? 'ZAUZETO' : slot.activity.status === 'PENDING' ? 'NA ČEKANJU' : 'RESERVIRANO'}
                                                                 </span>
-                                                                <span className="title">{slot.activity.notes || slot.activity.user?.name || "Termin"}</span>
+                                                                <span className="title">{getActivityTitle(slot.activity)}</span>
                                                                 <span className="time-range">{parseISO(slot.activity.startDateTime).toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" })} - {parseISO(slot.activity.endDateTime).toLocaleTimeString("hr-HR", { hour: "2-digit", minute: "2-digit" })}</span>
                                                             </div>
                                                             <div className="activity-actions">
@@ -412,7 +433,7 @@ export default function UnifiedCalendar() {
                                                         <div className={`week-activity ${activity.status} ${activity.notes?.startsWith('SOKAZ') ? 'SOKAZ' : ''}`}>
                                                             <div className="activity-main">
                                                                 {activity.status === 'BLOCKED' ? <Lock size={10} /> : <User size={10} />}
-                                                                <span>{activity.notes || activity.user?.name || "Termin"}</span>
+                                                                <span>{getActivityTitle(activity)}</span>
                                                             </div>
                                                             <button
                                                                 className="week-delete-btn"
