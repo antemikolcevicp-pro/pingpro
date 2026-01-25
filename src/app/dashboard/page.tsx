@@ -226,26 +226,25 @@ export default function Dashboard() {
 
             <div className="grid-responsive">
                 <section>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem' }}>
+                        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.5rem' }}>
                             <CalendarIcon size={24} color="var(--primary)" /> Moji Treningi
                         </h2>
                         <button
-                            className="btn glass"
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem' }}
+                            className="btn glass history-trigger"
                             onClick={() => setIsHistoryOpen(true)}
                         >
-                            <History size={16} /> Povijest
+                            <History size={16} /> <span>Povijest</span>
                         </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {loading ? (
                             <div className="card glass flex-center" style={{ padding: '3rem' }}><Loader2 className="animate-spin" /></div>
                         ) : upcomingBookings.length === 0 ? (
-                            <div className="card glass" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                                <CalendarIcon size={40} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                            <div className="card glass empty-state">
+                                <Activity size={32} style={{ opacity: 0.2 }} />
                                 <p>Nemaš nadolazećih treninga.</p>
-                                <Link href="/book" style={{ color: 'var(--primary)', fontSize: '0.9rem', marginTop: '1rem', display: 'inline-block' }}>Rezerviraj termin →</Link>
+                                <Link href="/book" className="btn btn-primary btn-sm">Rezerviraj termin</Link>
                             </div>
                         ) : (
                             upcomingBookings.map(b => (
@@ -281,94 +280,138 @@ export default function Dashboard() {
             </div>
 
             {/* HISTORY MODAL */}
-            {isHistoryOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-content glass card history-modal">
-                        <div className="modal-header">
-                            <div>
-                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <History size={24} color="var(--primary)" /> Povijest Treninga
-                                </h2>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>Svi tvoji prošli termini i odrađeni treninzi.</p>
-                            </div>
-                            <button className="close-btn" onClick={() => setIsHistoryOpen(false)}><X /></button>
-                        </div>
-
-                        <div className="history-filters">
-                            <div className="search-box">
-                                <Search size={18} />
-                                <input
-                                    placeholder="Pretraži po imenu..."
-                                    value={historySearch}
-                                    onChange={(e) => setHistorySearch(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="history-list scroll-area">
-                            {filteredHistory.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)' }}>
-                                    <p>Nema pronađenih treninga u povijesti.</p>
+            {
+                isHistoryOpen && (
+                    <div className="modal-overlay" onClick={() => setIsHistoryOpen(false)}>
+                        <div className="modal-content glass card history-modal" onClick={e => e.stopPropagation()}>
+                            <div className="history-header">
+                                <div className="h-header-left">
+                                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
+                                        <History size={24} color="var(--primary)" /> Povijest
+                                    </h2>
                                 </div>
-                            ) : (
-                                filteredHistory.map(b => (
-                                    <div key={b.id} className="history-item glass">
-                                        <div className="h-left" style={{ borderLeft: `3px solid ${b.coachId ? '#a855f7' : '#fff'}` }}>
-                                            <span className="h-date">{new Date(b.startDateTime).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
-                                            <span className="h-title">
-                                                {/* @ts-ignore */}
-                                                {(session?.user?.role === 'COACH' || session?.user?.role === 'ADMIN') ? `Gost: ${b.user?.name || 'Nepoznato'}` : (b.coach ? `Trener: ${b.coach.name}` : 'Samostalni trening')}
-                                            </span>
-                                        </div>
-                                        <div className="h-right">
-                                            <span className="h-time"><Clock size={12} /> {new Date(b.startDateTime).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                            <span className={`h-status ${b.status}`}>{b.status}</span>
-                                        </div>
+
+                                <div className="search-box">
+                                    <Search size={16} />
+                                    <input
+                                        placeholder="Pretraži..."
+                                        value={historySearch}
+                                        onChange={(e) => setHistorySearch(e.target.value)}
+                                    />
+                                </div>
+
+                                <button className="close-btn-circle" onClick={() => setIsHistoryOpen(false)}><X size={20} /></button>
+                            </div>
+
+                            <div className="history-list scroll-area">
+                                {filteredHistory.length === 0 ? (
+                                    <div className="empty-history">
+                                        <Search size={40} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                                        <p>{historySearch ? 'Nema rezultata za pretragu.' : 'Povijest je prazna.'}</p>
                                     </div>
-                                ))
-                            )}
+                                ) : (
+                                    filteredHistory.map(b => (
+                                        <div key={b.id} className="history-item">
+                                            <div className="h-item-main" style={{ borderLeft: `4px solid ${b.coachId ? '#a855f7' : 'var(--primary)'}` }}>
+                                                <div className="h-info">
+                                                    <span className="h-date">{new Date(b.startDateTime).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                                                    <span className="h-title">
+                                                        {/* @ts-ignore */}
+                                                        {(session?.user?.role === 'COACH' || session?.user?.role === 'ADMIN') ? `Gost: ${b.user?.name || 'Nepoznato'}` : (b.coach ? `Trener: ${b.coach.name}` : 'Samostalni trening')}
+                                                    </span>
+                                                </div>
+                                                <div className="h-meta">
+                                                    <span className="h-time"><Clock size={12} /> {new Date(b.startDateTime).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span className={`h-status-pill ${b.status}`}>{b.status === 'CONFIRMED' ? 'ODRAĐENO' : b.status}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <style jsx>{`
-                .training-card { padding: 1.25rem; transition: transform 0.2s; position: relative; overflow: hidden; }
-                .training-card:hover { transform: translateX(5px); background: rgba(255,255,255,0.05); }
+                .training-card { padding: 1.25rem; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.05); }
+                .training-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+                
+                .history-trigger { 
+                    padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 10px;
+                    display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);
+                    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+                    transition: all 0.3s;
+                }
+                .history-trigger:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
+
+                .empty-state {
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    padding: 4rem 2rem; gap: 1rem; color: var(--text-muted); text-align: center;
+                }
+
+                .gradient-text { background: linear-gradient(135deg, #fff 0%, var(--primary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+                /* History Modal */
+                .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+                .history-modal { width: 100%; max-width: 550px; height: 650px; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 28px; border: 1px solid rgba(255,255,255,0.1); }
+                
+                .history-header { 
+                    padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+                    background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05);
+                }
+                
+                .search-box { 
+                    flex: 1; display: flex; align-items: center; gap: 0.75rem; 
+                    background: rgba(0,0,0,0.2); padding: 0.6rem 1rem; border-radius: 12px; 
+                    border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s;
+                }
+                .search-box:focus-within { border-color: var(--primary); background: rgba(0,0,0,0.4); }
+                .search-box input { background: none; border: none; color: #fff; outline: none; width: 100%; font-size: 0.85rem; }
+
+                .close-btn-circle { 
+                    background: rgba(255,255,255,0.05); border: none; color: #fff; width: 36px; height: 36px; 
+                    border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;
+                }
+                .close-btn-circle:hover { background: var(--primary); transform: rotate(90deg); }
+
+                .history-list { overflow-y: auto; flex: 1; padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 0.75rem; }
+                .history-list::-webkit-scrollbar { width: 4px; }
+                .history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+                .history-item { position: relative; }
+                .h-item-main { 
+                    background: rgba(255,255,255,0.02); padding: 1rem 1.25rem; border-radius: 12px;
+                    display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.03);
+                    transition: transform 0.2s;
+                }
+                .h-item-main:hover { transform: scale(1.02); background: rgba(255,255,255,0.04); }
+
+                .h-info { display: flex; flex-direction: column; gap: 0.2rem; }
+                .h-date { font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; }
+                .h-title { font-weight: 600; font-size: 0.95rem; color: #eee; }
+                
+                .h-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
+                .h-time { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.3rem; font-weight: 600; }
+                
+                .h-status-pill { font-size: 0.6rem; padding: 3px 10px; border-radius: 20px; font-weight: 900; letter-spacing: 0.5px; background: rgba(0,0,0,0.2); }
+                .h-status-pill.CONFIRMED { color: var(--primary); border: 1px solid rgba(227, 6, 19, 0.3); }
+                .h-status-pill.CANCELLED { color: #555; border: 1px solid rgba(255,255,255,0.05); }
+
+                .empty-history { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; color: var(--text-muted); text-align: center; }
+
                 .animate-spin { animation: spin 1s linear infinite; }
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 .flex-center { display: flex; align-items: center; justify-content: center; }
 
-                /* History Modal */
-                .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-                .history-modal { width: 100%; max-width: 600px; max-height: 80vh; display: flex; flexDirection: column; padding: 2rem; }
-                .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
-                .close-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: 0.2s; }
-                .close-btn:hover { background: rgba(255,255,255,0.1); }
-
-                .history-filters { margin-bottom: 1.5rem; }
-                .search-box { display: flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.75rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
-                .search-box input { background: none; border: none; color: #fff; outline: none; width: 100%; font-size: 0.95rem; }
-
-                .history-list { overflow-y: auto; flex: 1; display: flex; flexDirection: column; gap: 0.75rem; padding-right: 0.5rem; }
-                .history-list::-webkit-scrollbar { width: 6px; }
-                .history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-
-                .history-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-radius: 12px; }
-                .h-left { display: flex; flex-direction: column; gap: 0.25rem; padding-left: 1rem; }
-                .h-date { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; }
-                .h-title { font-weight: 600; font-size: 0.95rem; }
-                .h-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
-                .h-time { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem; }
-                .h-status { font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.05); font-weight: 800; border: 1px solid rgba(255,255,255,0.1); }
-                .h-status.CONFIRMED { color: var(--primary); border-color: rgba(227, 6, 19, 0.2); }
-                .h-status.CANCELLED { color: #ff4444; border-color: rgba(255,68,68,0.2); }
-
                 @media (max-width: 600px) {
-                    .modal-overlay { padding: 1rem; }
-                    .history-modal { padding: 1.5rem; max-height: 90vh; }
+                    .history-header { padding: 1rem; flex-wrap: wrap; }
+                    .search-box { order: 3; width: 100%; flex: none; }
+                    .history-modal { height: 90vh; }
+                    .h-item-main { padding: 0.8rem; }
                 }
             `}</style>
-        </div>
+        </div >
     );
 }
