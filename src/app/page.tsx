@@ -1,7 +1,30 @@
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
 import { ChevronRight, Calendar, Users, Trophy } from "lucide-react";
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [status, router]);
+
+  // While checking session or if authenticated (redirecting), show minimal loader or empty state
+  if (status === "loading" || status === "authenticated") {
+    return (
+      <div style={{ height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="loader"></div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '4rem 0' }}>
       <section style={{ textAlign: 'center', marginBottom: '6rem' }}>
