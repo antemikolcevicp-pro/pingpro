@@ -54,7 +54,7 @@ export async function POST(req: Request) {
             overlapQuery.locationId = locationId || "bakarić";
         } else {
             overlapQuery.OR = [
-                { coachId: coachId },
+                { coachId: coachId || null },
                 {
                     locationId: locationId || "bakarić",
                     OR: [

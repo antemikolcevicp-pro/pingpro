@@ -67,7 +67,7 @@ export default function UnifiedCalendar() {
             const res = await fetch('/api/admin/users');
             if (res.ok) {
                 const data = await res.json();
-                setUsers(data);
+                setUsers(data.users || []);
             }
         } catch (e) { }
     };
@@ -120,7 +120,7 @@ export default function UnifiedCalendar() {
                     body.targetUserId = form.selectedUserId;
                 }
                 // @ts-ignore
-                body.coachId = form.isWithCoach ? session?.user?.id : null;
+                body.coachId = (form.isWithCoach && session?.user?.id) ? session.user.id : null;
                 body.duration = form.duration;
                 if (!form.selectedUserId && form.playerName) {
                     body.notes = `Manualna rezervacija: ${form.playerName}${form.notes ? ' - ' + form.notes : ''}`;
@@ -162,7 +162,7 @@ export default function UnifiedCalendar() {
                     bookingId: selectedBooking.id,
                     action: 'CONFIRM',
                     // @ts-ignore
-                    coachId: form.isWithCoach ? session?.user?.id : null
+                    coachId: (form.isWithCoach && session?.user?.id) ? session.user.id : null
                 })
             });
 
@@ -193,7 +193,8 @@ export default function UnifiedCalendar() {
         if (action === 'CONFIRM') {
             setSelectedBooking(activity);
             setActionType('CONFIRM');
-            setForm({ ...form, isWithCoach: !!activity.coachId });
+            // Default to with coach if admin is confirming, unless it was explicitly something else
+            setForm({ ...form, isWithCoach: activity.coachId ? true : true });
             return;
         }
 
@@ -469,7 +470,7 @@ export default function UnifiedCalendar() {
                                             checked={form.isWithCoach}
                                             onChange={(e) => setForm({ ...form, isWithCoach: e.target.checked })}
                                         />
-                                        Trener prisutan (sa mnom)
+                                        Trener prisutan ({session?.user?.name || "sa mnom"})
                                     </label>
                                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                                         {form.isWithCoach ? "Rezervacija će biti potvrđena kao trening s trenerom." : "Rezervacija će biti potvrđena kao samostalni trening (najam stola)."}
@@ -579,7 +580,7 @@ export default function UnifiedCalendar() {
                                                     checked={form.isWithCoach}
                                                     onChange={(e) => setForm({ ...form, isWithCoach: e.target.checked })}
                                                 />
-                                                Trener prisutan (sa mnom)
+                                                Trener prisutan ({session?.user?.name || "sa mnom"})
                                             </label>
                                         </div>
 
