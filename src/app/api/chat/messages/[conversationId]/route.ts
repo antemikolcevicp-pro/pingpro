@@ -5,13 +5,13 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
     req: Request,
-    { params }: { params: { conversationId: string } }
+    { params }: { params: Promise<{ conversationId: string }> }
 ) {
     const session = await getServerSession(authOptions);
     if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
 
     try {
-        const { conversationId } = params;
+        const { conversationId } = await params;
 
         const messages = await prisma.message.findMany({
             where: { conversationId },

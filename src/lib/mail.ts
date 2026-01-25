@@ -103,7 +103,7 @@ export const templates = {
             </html>
         `
     }),
-    bookingConfirmed: (date: string, time: string) => ({
+    bookingConfirmed: (date: string, time: string, coachName?: string) => ({
         subject: "Tvoj termin je potvrđen! ✅",
         html: `
             <!DOCTYPE html>
@@ -133,8 +133,83 @@ export const templates = {
                                             <p style="color: #ffffff; margin: 0 0 15px 0; font-size: 20px; font-weight: 600;">${date}</p>
                                             <p style="color: rgba(255,255,255,0.6); margin: 0 0 5px 0; font-size: 12px;">VRIJEME</p>
                                             <p style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600;">${time}h</p>
+                                            ${coachName ? `<p style="color: rgba(255,255,255,0.6); margin: 15px 0 5px 0; font-size: 12px;">TRENER</p><p style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 600;">${coachName}</p>` : ''}
                                         </div>
                                         <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 14px;">Vidimo se u dvorani!</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `
+    }),
+    bookingReceived: (date: string, time: string) => ({
+        subject: "Primili smo tvoju rezervaciju ⏳",
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+                    <tr>
+                        <td align="center">
+                            <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #333 0%, #111 100%); padding: 40px 30px; text-align: center;">
+                                        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">⏳ Rezervacija zaprimljena</h1>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 40px 30px; text-align: center;">
+                                        <p style="color: #ffffff; margin: 0 0 30px 0; font-size: 16px; line-height: 1.6;">
+                                            Tvoj upit za termin je zaprimljen i čeka potvrdu trenera. Javit ćemo ti se čim bude odobreno!
+                                        </p>
+                                        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 25px;">
+                                            <p style="color: rgba(255,255,255,0.6); margin: 0 0 5px 0; font-size: 12px;">DATUM I VRIJEME</p>
+                                            <p style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600;">${date} @ ${time}h</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `
+    }),
+    bookingCancelled: (date: string, time: string, reason?: string) => ({
+        subject: "Otkazan termin treninga ℹ️",
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+                    <tr>
+                        <td align="center">
+                            <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #E30613 0%, #900 100%); padding: 40px 30px; text-align: center;">
+                                        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">❌ Termin otkazan</h1>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 40px 30px; text-align: center;">
+                                        <p style="color: #ffffff; margin: 0 0 30px 0; font-size: 16px; line-height: 1.6;">
+                                            Termin predviđen za <strong>${date}</strong> u <strong>${time}h</strong> je otkazan.
+                                        </p>
+                                        ${reason ? `<div style="background: rgba(227, 6, 19, 0.1); border: 1px solid #E30613; padding: 15px; border-radius: 10px; margin-bottom: 20px; color: #ff9999;">Razlog: ${reason}</div>` : ''}
+                                        <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 14px;">Vidimo se nekom drugom prilikom!</p>
                                     </td>
                                 </tr>
                             </table>

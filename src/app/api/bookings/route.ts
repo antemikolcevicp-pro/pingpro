@@ -133,6 +133,15 @@ export async function POST(req: Request) {
             }
         }
 
+        // Email Notification to Player (Receipt)
+        if (initialStatus === 'PENDING' && booking.user?.email) {
+            const dateStr = startObj.toLocaleDateString("hr-HR", { timeZone: "Europe/Zagreb" });
+            const timeStr = startObj.toLocaleTimeString("hr-HR", { timeZone: "Europe/Zagreb", hour: "2-digit", minute: "2-digit" });
+            const playerPayload = templates.bookingReceived(dateStr, timeStr);
+
+            await sendBookingEmail(booking.user.email, playerPayload.subject, playerPayload.html);
+        }
+
         return NextResponse.json(booking);
     } catch (error) {
         console.error("Error creating booking:", error);

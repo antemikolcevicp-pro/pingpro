@@ -7,6 +7,7 @@ import { Calendar as CalendarIcon, Clock, Plus, Users, Loader2, Trophy, Activity
 import SokazConnect from "@/components/SokazConnect";
 import SokazResults from "@/components/SokazResults";
 import TeamActivities from "@/components/TeamActivities";
+import CoachAgenda from "@/components/CoachAgenda";
 import { useRouter } from "next/navigation";
 
 const DashboardRightSection = ({ session }: { session: any }) => {
@@ -103,15 +104,23 @@ export default function Dashboard() {
     const [historySearch, setHistorySearch] = useState("");
     const router = useRouter();
 
-    useEffect(() => {
+    const fetchBookings = () => {
         if (session) {
             fetch("/api/user/bookings")
                 .then(res => res.json())
                 .then(data => {
                     if (Array.isArray(data)) setBookings(data);
                     setLoading(false);
+                })
+                .catch(error => {
+                    console.error("Failed to fetch bookings:", error);
+                    setLoading(false);
                 });
         }
+    };
+
+    useEffect(() => {
+        fetchBookings();
     }, [session]);
 
     const saveName = async () => {
@@ -151,6 +160,12 @@ export default function Dashboard() {
         const search = historySearch.toLowerCase();
         return coachName.includes(search) || playerName.includes(search);
     }).sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
+
+    const isCoach = (session?.user as any)?.role === 'COACH' || (session?.user as any)?.role === 'ADMIN';
+
+    const thisMonth = new Date().getMonth();
+    const thisMonthBookings = bookings.filter(b => new Date(b.startDateTime).getMonth() === thisMonth);
+    const completedThisMonth = thisMonthBookings.filter(b => b.status === 'COMPLETED').length;
 
     return (
         <div style={{ padding: '2rem 0' }}>
@@ -203,7 +218,20 @@ export default function Dashboard() {
                         </div>
                     )}
 
-                    <p style={{ color: 'var(--text-muted)' }}>
+                    {!isCoach && (
+                        <div className="stats-row" style={{ display: 'flex', gap: '1.5rem', marginTop: '1rem' }}>
+                            <div className="stat-pill">
+                                <span className="stat-val">{upcomingBookings.length}</span>
+                                <span className="stat-label">Nadolazeća</span>
+                            </div>
+                            <div className="stat-pill">
+                                <span className="stat-val">{completedThisMonth}</span>
+                                <span className="stat-label">Odrađeno (ovaj mj.)</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <p style={{ color: 'var(--text-muted)', marginTop: !isCoach ? '1.5rem' : '0' }}>
                         {/* @ts-ignore */}
                         {session?.user?.role === 'COACH'
                             ? "Evo tvojih nadolazećih treninga s igračima."
@@ -223,6 +251,8 @@ export default function Dashboard() {
                     </Link>
                 </div>
             </header>
+
+            {isCoach && <CoachAgenda bookings={bookings} onUpdate={fetchBookings} />}
 
             <div className="grid-responsive">
                 <section>
@@ -352,6 +382,13 @@ export default function Dashboard() {
                 }
 
                 .gradient-text { background: linear-gradient(135deg, #fff 0%, var(--primary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+                .stat-pill { 
+                    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+                    padding: 0.5rem 1rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem;
+                }
+                .stat-val { color: var(--primary); font-weight: 800; font-size: 1.2rem; }
+                .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
 
                 /* History Modal */
                 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
