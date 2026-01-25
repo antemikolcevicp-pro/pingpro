@@ -64,8 +64,11 @@ export default function CoachStatsPage() {
     const totalSessionsFiltered = filteredDetails.length;
 
     // Get unique coaches and teams for filter options
-    const coaches = Array.from(new Set(report?.details?.map((i: any) => JSON.stringify({ id: i.coachId, name: i.coachName })) || [])).map((s: any) => JSON.parse(s)).filter(c => c.id);
-    const teams = Array.from(new Set(report?.details?.map((i: any) => i.teamName) || []));
+    const coaches: { id: string, name: string }[] = Array.from(new Set((report?.details || []).map((i: any) => JSON.stringify({ id: i.coachId, name: i.coachName }))))
+        .map((s): { id: string, name: string } => JSON.parse(s as string))
+        .filter(c => c.id);
+
+    const teams: string[] = Array.from(new Set((report?.details || []).map((i: any) => i.teamName as string)));
 
     return (
         <div className="stats-page">
