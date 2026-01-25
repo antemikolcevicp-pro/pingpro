@@ -90,8 +90,9 @@ export default function ChatWindow({
                 body: JSON.stringify({ text, conversationId }),
             });
 
-            if (!res.ok) {
-                // Handle error, maybe revert input
+            if (res.ok) {
+                // Refresh after 3 seconds as requested
+                setTimeout(() => fetchMessages(), 3000);
             }
         } catch (err) {
             console.error(err);
