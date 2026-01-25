@@ -78,6 +78,7 @@ model Team {
   createdAt  DateTime @default(now())
   coach      User     @relation("TeamCoach", fields: [coachId], references: [id], onDelete: Cascade)
   members    User[]   @relation("TeamMembers")
+  conversations Conversation[]
 }
 
 model Location {
@@ -157,6 +158,8 @@ model Conversation {
 
   messages  Message[]
   users     User[]    @relation("UserConversations")
+  teamId    String?
+  team      Team?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
 }
 
 model Message {

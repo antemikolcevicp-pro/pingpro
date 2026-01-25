@@ -10,13 +10,19 @@ export async function GET() {
     try {
         // @ts-ignore
         const userId = session.user.id;
+        // @ts-ignore
+        const userTeamId = session.user.teamId;
 
         const conversations = await prisma.conversation.findMany({
             where: {
-                users: { some: { id: userId } }
+                OR: [
+                    { users: { some: { id: userId } } },
+                    { teamId: userTeamId || 'NONE' }
+                ]
             },
             include: {
                 users: true,
+                team: true,
                 messages: {
                     orderBy: { createdAt: 'desc' },
                     take: 1
@@ -37,15 +43,30 @@ export async function POST(req: Request) {
     if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
 
     try {
-        const { participantId } = await req.json();
+        const { participantId, teamId } = await req.json();
         // @ts-ignore
         const userId = session.user.id;
 
-        if (!participantId) return new NextResponse("Missing participantId", { status: 400 });
+        if (!participantId && !teamId) return new NextResponse("Missing participantId or teamId", { status: 400 });
 
-        // Check if conversation already exists
+        if (teamId) {
+            // Team chat
+            let conversation = await prisma.conversation.findFirst({
+                where: { teamId }
+            });
+
+            if (!conversation) {
+                conversation = await prisma.conversation.create({
+                    data: { teamId }
+                });
+            }
+            return NextResponse.json(conversation);
+        }
+
+        // Direct chat
         const existing = await prisma.conversation.findFirst({
             where: {
+                teamId: null,
                 AND: [
                     { users: { some: { id: userId } } },
                     { users: { some: { id: participantId } } }
